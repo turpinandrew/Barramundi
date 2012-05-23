@@ -108,8 +108,8 @@ public class Database {
 	public void addRecord(JFrame frame) { 
 		try { 
 			Class c = Class.forName(recordType); 
-			Constructor cons = c.getDeclaredConstructor(null);
-			DatabaseRecord newRecord = (DatabaseRecord)cons.newInstance(null);
+			Constructor cons[] = c.getDeclaredConstructors();
+			DatabaseRecord newRecord = (DatabaseRecord)cons[0].newInstance(null);
 			if (newRecord.edit(frame)) {
 				list.addElement(newRecord);
 				changed = true;

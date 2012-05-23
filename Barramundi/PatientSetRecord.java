@@ -63,9 +63,9 @@ class PatientSetRecord implements DatabaseRecord {
 				seenName + ".  ");
 
 			// extract the names of the patient modifiers
-		Enumeration e = patientModifiers.elements();
-		while (e.hasMoreElements())
-			s.append(((PatientModifier)e.nextElement()).name +" ");
+		Enumeration en = patientModifiers.elements();
+		while (en.hasMoreElements())
+			s.append(((PatientModifier)en.nextElement()).name +" ");
 		
 		return s.toString();
 	}// toString()
@@ -156,9 +156,9 @@ class PatientSetRecord implements DatabaseRecord {
 		
 			// create a list of PatientModifier objects (patMods)
 		Vector patMods   = new Vector();			
-		Enumeration enum = patientModifiers.elements();
-		while(enum.hasMoreElements())
-			patMods.addElement(createPatientModifier((PatientModifier)enum.nextElement()));
+		Enumeration en = patientModifiers.elements();
+		while(en.hasMoreElements())
+			patMods.addElement(createPatientModifier((PatientModifier)en.nextElement()));
 
 			// apply each static modifier.
 		try {
