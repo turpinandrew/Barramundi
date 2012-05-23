@@ -1,0 +1,104 @@
+FullT 24-2~Barramundi.TPFullThreshold242~-1~start guess
+-----------
+EMU s=1.5 pdf=uniform lf=LF95_3~Barramundi.TPEMU~PDFUniform.txt~pdf~LF95_3.txt~lf~STANDARD_DEVIATION~stop condition~1.5~stop param
+SEMU_KS s=1.5 pdf=uniform SP=20 (2of3) AP=32 (1of1)~Barramundi.TPSEMU_KS~20~SP~2~MSS to pass for SP~3~MSS to show for SP~32~AP~1~MSS to pass for AP~1~MSS to show for AP~PDFUniform.txt~pdf~LF95_3.txt~lf~NUMBER_OF_PRESENTATIONS~stop condition~10~stop param
+--
+SEMU s=1.5 pdf=uniform SP=35 AP=32~Barramundi.TPSEMU~35~SP~32~AP~PDFUniform.txt~pdf~LF95_3.txt~lf~NUMBER_OF_PRESENTATIONS~stop condition~10~stop param
+---
+Zest n=10 a=0.25~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF95_3.txt~lf~1~weight~1~slope~0.25~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~10~stop param
+Zest n=10 a=0.50~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF95_3.txt~lf~1~weight~1~slope~0.50~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~10~stop param
+Zest n=10 a=0.75~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF95_3.txt~lf~1~weight~1~slope~0.75~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~10~stop param
+------
+1-up 2-down r= 3 av= 2 step= 2,2,2 sg= 25~Barramundi.TPGeneralStaircase~1~number up~2~number down~3~number of reversals~2~num of last reversals to average~25~initial value~2,2,2~stair steps
+1-up 1-down r= 4 av= 2 step= 4,2,1~Barramundi.TPGeneralStaircase~1~number up~1~number down~4~number of reversals~2~num of last reversals to average~20~initial value~4,2,1,1~stair steps
+2-up 1-down r= 3 av= 2 step= 2,2,2 sg= 15~Barramundi.TPGeneralStaircase~2~number up~1~number down~3~number of reversals~2~num of last reversals to average~15~initial value~2,2,2~stair steps
+-------
+Zest n=47 a=0.25~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF95_3.txt~lf~1~weight~1~slope~0.25~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~47~stop param
+Zest n=47 a=0.50~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF95_3.txt~lf~1~weight~1~slope~0.50~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~47~stop param
+Zest n=47 a=0.75~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF95_3.txt~lf~1~weight~1~slope~0.75~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~47~stop param
+------------------------
+1-up 2-down r= 16 av= 10 step= 4,2,1 sg= 25~Barramundi.TPGeneralStaircase~1~number up~2~number down~16~number of reversals~10~num of last reversals to average~25~initial value~4,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1~stair steps
+1-up 1-down r= 16 av= 10 step= 4,2,1 sg=20~Barramundi.TPGeneralStaircase~1~number up~1~number down~16~number of reversals~10~num of last reversals to average~20~initial value~4,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1~stair steps
+2-up 1-down r= 16 av= 10 step= 2,1 sg= 15~Barramundi.TPGeneralStaircase~2~number up~1~number down~16~number of reversals~4~num of last reversals to average~15~initial value~4,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1~stair steps
+------
+Zest n=10 a=0.25~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF95_3.txt~lf~1~weight~1~slope~0.25~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~10~stop param
+Zest n=10 a=0.50~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF95_3.txt~lf~1~weight~1~slope~0.50~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~10~stop param
+Zest n=10 a=0.75~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF95_3.txt~lf~1~weight~1~slope~0.75~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~10~stop param
+-------
+1-up 2-down r= 2 av= 2 step= 2,2 sg= 25~Barramundi.TPGeneralStaircase~1~number up~2~number down~2~number of reversals~2~num of last reversals to average~25~initial value~2,2~stair steps
+1-up 1-down r= 4 av= 2 step= 4,2,1~Barramundi.TPGeneralStaircase~1~number up~1~number down~4~number of reversals~2~num of last reversals to average~20~initial value~4,2,1,1~stair steps
+2-up 1-down r= 2 av= 2 step= 2,2 sg= 15~Barramundi.TPGeneralStaircase~2~number up~1~number down~2~number of reversals~2~num of last reversals to average~15~initial value~2,2~stair steps
+------
+1-up 2-down r= 2 av= 2 step= 1,1 sg= 30~Barramundi.TPGeneralStaircase~1~number up~2~number down~2~number of reversals~2~num of last reversals to average~30~initial value~1,1~stair steps
+1-up 1-down r= 4 av= 2 step= 4,2,1~Barramundi.TPGeneralStaircase~1~number up~1~number down~4~number of reversals~2~num of last reversals to average~25~initial value~4,2,1,1~stair steps
+2-up 1-down r= 2 av= 2 step= 1,1 sg= 10~Barramundi.TPGeneralStaircase~2~number up~1~number down~2~number of reversals~2~num of last reversals to average~10~initial value~1,1~stair steps
+------
+Zest n=1000 a=0.25~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF95_3.txt~lf~1~weight~1~slope~0.25~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~1000~stop param
+Zest n=1000 a=0.50~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF95_3.txt~lf~1~weight~1~slope~0.50~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~1000~stop param
+Zest n=1000 a=0.75~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF95_3.txt~lf~1~weight~1~slope~0.75~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~1000~stop param
+------------------------
+Zest n=47 a=0.25 LF_15_5_3~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF_15_5_s=3.txt~lf~1~weight~1~slope~0.25~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~47~stop param
+Zest n=47 a=0.50 LF_15_5_3~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF_15_5_s=3.txt~lf~1~weight~1~slope~0.50~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~47~stop param
+Zest n=47 a=0.75 LF_15_5_3~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF_15_5_s=3.txt~lf~1~weight~1~slope~0.75~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~47~stop param
+------------------------
+Zest n=47 a=0.25 LF_5_5_2.2~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF_5_5_s=2.2.txt~lf~1~weight~1~slope~0.25~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~47~stop param
+Zest n=47 a=0.50 LF_5_5_2.2~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF_5_5_s=2.2.txt~lf~1~weight~1~slope~0.50~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~47~stop param
+Zest n=47 a=0.75 LF_5_5_2.2~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF_5_5_s=2.2.txt~lf~1~weight~1~slope~0.75~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~47~stop param
+------------------------
+Zest n=47 a=0.25 LF_10_10_4~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF_10_10_s=4.txt~lf~1~weight~1~slope~0.25~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~47~stop param
+Zest n=47 a=0.50 LF_10_10_4~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF_10_10_s=4.txt~lf~1~weight~1~slope~0.50~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~47~stop param
+Zest n=47 a=0.75 LF_10_10_4~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF_10_10_s=4.txt~lf~1~weight~1~slope~0.75~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~47~stop param
+------------------------
+Zest n=47 a=0.25~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF_5_5_s=4.txt~lf~1~weight~1~slope~0.25~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~47~stop param
+Zest n=47 a=0.50~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF_5_5_s=4.txt~lf~1~weight~1~slope~0.50~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~47~stop param
+Zest n=47 a=0.75~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF_5_5_s=4.txt~lf~1~weight~1~slope~0.75~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~47~stop param
+------------------------
+1-up 2-down r= 16 av= 10 step= 4,2,1 sg= 30~Barramundi.TPGeneralStaircase~1~number up~2~number down~16~number of reversals~10~num of last reversals to average~30~initial value~4,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1~stair steps
+1-up 1-down r= 16 av= 10 step= 4,2,1~Barramundi.TPGeneralStaircase~1~number up~1~number down~16~number of reversals~10~num of last reversals to average~25~initial value~4,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1~stair steps
+2-up 1-down r= 16 av= 10 step= 2,1 sg= 10~Barramundi.TPGeneralStaircase~2~number up~1~number down~16~number of reversals~4~num of last reversals to average~10~initial value~4,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1~stair steps
+------------------------
+1-up2-down r=50 av=10 step=1 sg=30~Barramundi.TPGeneralStaircase~1~numberup~2~numberdown~50~numberofreversals~10~numoflastreversalstoaverage~30~initialvalue~1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1~stairsteps
+------------------------
+1-up 2-down r= 2 av= 2 step= 2,2 sg= 30~Barramundi.TPGeneralStaircase~1~number up~2~number down~2~number of reversals~2~num of last reversals to average~30~initial value~2,2~stair steps
+1-up 1-down r= 4 av= 2 step= 4,2,1~Barramundi.TPGeneralStaircase~1~number up~1~number down~4~number of reversals~2~num of last reversals to average~25~initial value~4,2,1,1~stair steps
+2-up 1-down r= 2 av= 2 step= 2,2 sg= 10~Barramundi.TPGeneralStaircase~2~number up~1~number down~2~number of reversals~2~num of last reversals to average~10~initial value~2,2~stair steps
+------------------------
+1-up 1-down r= 4 av= 2 step= 4,2,1~Barramundi.TPGeneralStaircase~1~number up~1~number down~4~number of reversals~2~num of last reversals to average~25~initial value~4,2,1,1~stair steps
+2-up 1-down r= 4 av= 2 step= 4,2,1,1 sg= 10~Barramundi.TPGeneralStaircase~2~number up~1~number down~4~number of reversals~2~num of last reversals to average~10~initial value~4,2,1,1~stair steps
+------------------------
+1-up 2-down r= 2 av= 2 step= 4,2 sg= 30~Barramundi.TPGeneralStaircase~1~number up~2~number down~2~number of reversals~2~num of last reversals to average~30~initial value~4,2~stair steps
+1-up 1-down r= 4 av= 2 step= 4,2,1~Barramundi.TPGeneralStaircase~1~number up~1~number down~4~number of reversals~2~num of last reversals to average~25~initial value~4,2,1,1~stair steps
+2-up 1-down r= 2 av= 2 step= 4,2 sg= 10~Barramundi.TPGeneralStaircase~2~number up~1~number down~2~number of reversals~2~num of last reversals to average~10~initial value~4,2~stair steps
+------------------------
+1-up 3-down r= 2 av= 2 step= 4,2 sg= 30~Barramundi.TPGeneralStaircase~1~number up~3~number down~2~number of reversals~2~num of last reversals to average~30~initial value~4,2~stair steps
+1-up 1-down r= 4 av= 2 step= 4,2,1~Barramundi.TPGeneralStaircase~1~number up~1~number down~4~number of reversals~2~num of last reversals to average~25~initial value~4,2,1,1~stair steps
+3-up 1-down r= 2 av= 2 step= 4,2 sg= 10~Barramundi.TPGeneralStaircase~3~number up~1~number down~2~number of reversals~2~num of last reversals to average~10~initial value~4,2~stair steps
+------------------------
+1-up 3-down r= 2 av= 2 step= 4,1 sg= 10~Barramundi.TPGeneralStaircase~1~number up~3~number down~2~number of reversals~2~num of last reversals to average~10~initial value~4,1~stair steps
+1-up 1-down r= 6 av= 4 step= 4,2,1~Barramundi.TPGeneralStaircase~1~number up~1~number down~6~number of reversals~4~num of last reversals to average~25~initial value~4,2,1,1,1,1~stair steps
+3-up 1-down r= 2 av= 2 step= 4,1 sg= 10~Barramundi.TPGeneralStaircase~3~number up~1~number down~2~number of reversals~2~num of last reversals to average~10~initial value~4,1~stair steps
+------------------------
+Zest n=9 a=0.25~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF95_3.txt~lf~1~weight~1~slope~0.25~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~9~stop param
+Zest n=9 a=0.50~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF95_3.txt~lf~1~weight~1~slope~0.50~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~9~stop param
+Zest n=9 a=0.75~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF95_3.txt~lf~1~weight~1~slope~0.75~lf alignment point~NUMBER_OF_PRESENTATIONS~stop condition~9~stop param
+------------------------
+Zest s=1.0 a=0.75~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF95_3.txt~lf~1~weight~1~slope~0.75~lf alignment point~STANDARD_DEVIATION~stop condition~1.0~stop param
+Zest s=1.0 a=0.75~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF95_3.txt~lf~1~weight~1~slope~0.75~lf alignment point~STANDARD_DEVIATION~stop condition~1.0~stop param
+Zest s=1.0~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF95_3.txt~lf~1~weight~1~slope~0.5~lf alignment point~STANDARD_DEVIATION~stop condition~1.0~stop param
+Zest s=1.0 a=0.25~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF95_3.txt~lf~1~weight~1~slope~0.25~lf alignment point~STANDARD_DEVIATION~stop condition~1.0~stop param
+Zest s=1.0 a=0.25~Barramundi.TPZest~PDFUniform.txt~npdf~PDFUniform.txt~gpdf~LF95_3.txt~lf~1~weight~1~slope~0.25~lf alignment point~STANDARD_DEVIATION~stop condition~1.0~stop param
+------------------------
+1-up 3-down r= 4 av= 2 step= 4,2,1 sg= 40~Barramundi.TPGeneralStaircase~1~number up~3~number down~4~number of reversals~2~num of last reversals to average~40~initial value~4,2,1,1~stair steps
+1-up 3-down r= 4 av= 2 step= 4,2,1 sg= 10~Barramundi.TPGeneralStaircase~1~number up~3~number down~4~number of reversals~2~num of last reversals to average~10~initial value~4,2,1,1~stair steps
+1-up 1-down r= 6 av= 4 step= 4,2,1~Barramundi.TPGeneralStaircase~1~number up~1~number down~6~number of reversals~4~num of last reversals to average~25~initial value~4,2,1,1,1,1~stair steps
+3-up 1-down r= 4 av= 2 step= 4,2,1 sg= 40~Barramundi.TPGeneralStaircase~3~number up~1~number down~4~number of reversals~2~num of last reversals to average~40~initial value~4,2,1,1~stair steps
+3-up 1-down r= 4 av= 2 step= 4,2,1 sg= 10~Barramundi.TPGeneralStaircase~3~number up~1~number down~4~number of reversals~2~num of last reversals to average~10~initial value~4,2,1,1~stair steps
+------------------------
+1-up 3-down r= 6 av= 4 step= 4,2,1~Barramundi.TPGeneralStaircase~1~number up~3~number down~6~number of reversals~4~num of last reversals to average~25~initial value~4,2,1,1,1,1~stair steps
+1-up 2-down r= 6 av= 4 step= 4,2,1~Barramundi.TPGeneralStaircase~1~number up~2~number down~6~number of reversals~4~num of last reversals to average~25~initial value~4,2,1,1,1,1~stair steps
+1-up 1-down r= 6 av= 4 step= 4,2,1~Barramundi.TPGeneralStaircase~1~number up~1~number down~6~number of reversals~4~num of last reversals to average~25~initial value~4,2,1,1,1,1~stair steps
+2-up 1-down r= 6 av= 4 step= 4,2,1~Barramundi.TPGeneralStaircase~2~number up~1~number down~6~number of reversals~4~num of last reversals to average~25~initial value~4,2,1,1,1,1~stair steps
+3-up 1-down r= 6 av= 4 step= 4,2,1~Barramundi.TPGeneralStaircase~3~number up~1~number down~6~number of reversals~4~num of last reversals to average~25~initial value~4,2,1,1,1,1~stair steps
+------------------------
+-- FT~Barramundi.TPStaircase~-1~start guess
+------------------------

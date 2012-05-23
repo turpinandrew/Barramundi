@@ -1,0 +1,559 @@
+package Barramundi;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.StringTokenizer;
+import java.util.Vector;
+import java.util.NoSuchElementException;
+import javax.swing.JOptionPane;
+import java.lang.Double;
+import java.lang.Math;
+import java.lang.reflect.Method;
+
+/**
+    A test procedure that implements my idea of a max likelihood search.
+    Pdfs and lfs are discrete.
+    The final pdf used for the search is formed by combining a 
+    glaucomatous pdf with an age adjusted normal pdf. There are three
+    input files:
+        (1) pdf of normals aged 45 years (line per location) 
+        (2) pdf of diseased thresholds   (line per location) 
+        (3) lf                          (line per location) 
+    
+    In this version the slope of the lf is not adjusted for age.
+    Also the slope for age correction is assumed location independant (ie
+    constant across all locations).
+
+    Added growth pattern to adjust starting pdf based on eccentricity.
+
+    @author Andrew Turpin (turpinandrew@hotmail.com)
+    @version 2.0 May 2004
+*/
+public class TPZest extends AbstractTestProcedure {
+    /** The name of this procedure to print   */ String title;
+    
+    /** File where normals pdf is stored      */ BufferedReader npdfFile;
+    /** File where glaucs pdf is stored       */ BufferedReader gpdfFile;
+    /** File where lf is stored              */ BufferedReader lfFile;
+    /** File where stop paramaters are stored */ BufferedReader paramFile;
+    /** normal pdf for each location          */ double npdf[][];
+    /** pdf for each location                 */ double gpdf[][];
+    /** likelihood function for each stimulus */ double lf[][];
+    /** weighting factor for pdf combination  */ double pdfWeight;
+    /** slope for age adjustment              */ double ageAdjSlope;
+    /** alignment point for Lf                */ double lfAlignmentPt;
+
+    /** The number of data points in a pdf/lf*/ int domain;
+    /** Paramater that controls stopping      */ double stoppingParam;
+    /** Type of stopping condition            */ int stoppingCondition;
+    /** stopping condition 1                  */ static final int NUMBER_OF_PRESENTATIONS = 1;
+    /** stopping condition 2                  */ static final int STANDARD_DEVIATION     = 2;
+    /** stopping condition 3                  */ static final int ENTROPY                = 3;
+    /** stopping condition 4                  */ static final int MAXP                   = 4;
+    /** stopping condition 5                  */ static final int IQR                    = 5;
+    
+    /** 3rd argument to alignLf() */ protected final static boolean ALIGN_YES = true;
+    /** 3rd argument to alignLf() */ protected final static boolean ALIGN_NO  = false;
+
+    /** min probability allowed in combined pdf */ static double PDF_FLOOR          = 0.001;
+    /** max number oif presentations allowed    */ static int MAX_NUM_PRESENTATIONS = 1000;
+
+    /**
+       Use this constructor to pass a constant stop condition.
+
+        @param npdfFilename  The name of the file from which to read normal 45 yr old pdfs.
+        @param gpdfFilename  The name of the file from which to read diseased pdfs.
+        @param lfFilename   The name of the file from which to read lfs.
+    @param paramFilename The name of the file from which to read stop condition parameters.
+        @param weight        The factor to multiply normals pdf by during pdf combination.
+        @param slope         The slope of the linear relationship between age and normal thresholds
+        @param lfAlignmentPt The prob that should be aligned with pdf (standard = 0.5)
+        @param stopCondition Either NUMBER_OF_PRESENTATIONS or STANDARD_DEVIATION or ENTROPY or MAXP or IQR.
+    @param stopP         Value ot stopCondition to stop at.
+    */
+    TPZest(String npdfFilename, String gpdfFilename, String lfFilename, 
+       Double weight, Double slope,
+       Double lfAlignmentPt,
+           String stopCondition, Double stopP)
+    {
+        super("ZESTAgeAdj "+npdfFilename+" "+gpdfFilename+" "+
+                weight.toString()+" "+slope.toString()+" "+
+                lfAlignmentPt+" "+
+                lfFilename+" "+stopCondition+" "+stopP);
+        title = "ZESTAgeAdj "+npdfFilename+" "+gpdfFilename+" "+
+                weight.toString()+" "+slope.toString()+" "+
+                lfAlignmentPt.toString()+" "+
+            lfFilename+" "+stopCondition+" "+stopP;
+
+    //Set the stopping parameter to the static value of stopP.
+    stoppingParam = stopP.doubleValue();
+
+    commonConstructor(npdfFilename,
+              gpdfFilename,
+              lfFilename, 
+              weight,
+              slope,
+              lfAlignmentPt,
+              stopCondition);
+    }
+
+    /**
+       Common constructor called by each constructor.
+     */
+    public void commonConstructor(String npdfFilename, String gpdfFilename, String lfFilename, 
+                  Double weight, Double slope,
+                  Double lfAlignmentPt,
+                  String stopCondition)
+    {
+        try {
+            npdfFile = new BufferedReader(new FileReader(npdfFilename));
+            gpdfFile = new BufferedReader(new FileReader(gpdfFilename));
+            lfFile = new BufferedReader(new FileReader(lfFilename));
+            
+            if (stopCondition.compareTo("NUMBER_OF_PRESENTATIONS") == 0)
+                stoppingCondition = NUMBER_OF_PRESENTATIONS;
+            else if (stopCondition.compareTo("STANDARD_DEVIATION") == 0)
+                stoppingCondition = STANDARD_DEVIATION;
+            else if (stopCondition.compareTo("ENTROPY") == 0)
+                stoppingCondition = ENTROPY;
+            else if (stopCondition.compareTo("MAXP") == 0)
+                stoppingCondition = MAXP;
+            else if (stopCondition.compareTo("IQR") == 0)
+                stoppingCondition = IQR;
+            else
+                JOptionPane.showMessageDialog(null,"The stopping condition "+stopCondition+" for TPZest is unknown","Barramundi - Error",JOptionPane.ERROR_MESSAGE);
+            pdfWeight     = weight.doubleValue();
+            ageAdjSlope   = slope.doubleValue();
+            this.lfAlignmentPt = lfAlignmentPt.doubleValue();
+        
+        } catch (FileNotFoundException e) {
+            JOptionPane.showMessageDialog(null,"Could not find pdf/lf/param file\n" + e,"Barramundi - Error",JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    /** 
+        Intialise domain, read pdfs and lfs.
+        Reverse lf's so that they are flipped FOSs
+    */
+    public void localSetup() {
+        domain = (int)((stimulus.maxExcitation - stimulus.minExcitation)/stimulus.stepExcitation) + 1;
+
+        npdf = readDiscreteFunctions(stimulus.numLocations, domain, npdfFile);
+        gpdf = readDiscreteFunctions(stimulus.numLocations, domain, gpdfFile);
+        lf   = readDiscreteFunctions(stimulus.numLocations, domain, lfFile);
+
+            // reverse lfs
+        for(int i = 0 ; i < lf.length ; i++)
+            for(int j = 0 ; j < lf[i].length / 2 ; j++) {
+                double temp = lf[i][j];
+                lf[i][j] = lf[i][lf[i].length - 1 - j];
+                lf[i][lf[i].length - 1 - j] = temp;
+            }
+    }// localSetup()
+    
+    /** 
+        First build the combined pdf for a patient with this age, then
+        show each stimulus to the patient until stopping condition is reached.
+        Each presentation sequence proceeds as:
+            (1) present the mean of the pdf (rounded to nearest whole dB)
+            (2) if the response is unseen, multiply pdf by inverse lf
+                else multiply by lf (hence lf "should be" monotonic decreasing)
+        Record information in "stats" for this patient.
+    */
+    public void run(Patient p) {
+            // these hold finsished and unfinished locations respectively
+        Vector results = new Vector(stimulus.numLocations);
+        Vector finishedResults = new Vector();
+
+        double combinedPdf[][] = makeCombinedPdf(p.age);
+#ifdef VERBOSE_OUTPUT
+        for(int i = 0 ; i < stimulus.numLocations ; i++) {
+            for(int j = 0 ; j < domain; j++)
+                System.out.print(combinedPdf[i][j]+" ");
+            System.out.println("");
+        }
+#endif
+
+            // create Zest object for each location
+        for (int i = 0; i < points.size(); i++) {
+            Point point = (Point) points.get(i);
+            int x = (int) point.getX();
+            int y = (int) point.getY();
+            int number = (int)point.getNumber();
+
+            results.add(new Zest(x, y, number, combinedPdf[number], lf[number]));
+
+            stats.numPresentation[number] = 0;
+        }
+
+        /** value of stimulus to display each iteration  */ int stimValue;
+        /** the total number of presentations            */ int numPresentations = 0;
+        
+        stats.inputThreshold = (double [])p.threshold.clone();
+
+        while (results.size() > 0) {
+                // choose random location
+            int loc   = (int) Math.floor(Math.random() * results.size());
+            Zest zest = (Zest) results.get(loc);
+            int x             = zest.locx;
+            int y             = zest.locy;
+#ifdef VERBOSE_OUTPUT
+            System.out.print("Pdf = ");
+            for(int j = 0 ; j < zest.pdf.length; j++)
+                System.out.print(zest.pdf[j]+" ");
+            System.out.print("\n");
+            System.out.print("TPZest: stimulus "+zest.locationNumber+".  Threshold = "+p.threshold[zest.locationNumber]+"\n=========================\n");
+            System.out.print("TPZest: next to present for stimulus " + zest.locationNumber + " mean = " + mean(zest.pdf)+"\n");
+            System.out.print("\t\tstdev = " + stdev(zest.pdf)+"\n");
+#endif
+            
+            stimValue = (int)Math.round(mean(zest.pdf));
+        	stats.numPresentation[zest.locationNumber]++;
+            numPresentations++;
+                
+            if (p.seenObject.seen(stimValue, p.threshold[zest.locationNumber], numPresentations, x, y)){
+#ifdef VERBOSE_OUTPUT
+                System.out.print("Seen\n");
+#endif
+                scalePdf(zest.pdf, alignLf(zest.lf, stimValue, ALIGN_YES));
+            } else {
+#ifdef VERBOSE_OUTPUT
+                System.out.print("Not Seen\n");                    
+#endif
+                scalePdf(zest.pdf, alignLf(zest.lf, stimValue, ALIGN_NO));
+            }
+                
+#ifdef VERBOSE_OUTPUT
+            System.out.print("TPZest: next to present for stimulus " + zest.locationNumber + " mean = " + mean(zest.pdf)+"\n");
+            System.out.print("\t\tstdev = " + stdev(zest.pdf)+"\n");
+            System.out.print("\t\tentropy = " + entropy(zest.pdf)+"\n");
+            System.out.print("\t\tmaxp = " + maxp(zest.pdf)+"\n");
+#endif
+
+            if (((stoppingCondition == NUMBER_OF_PRESENTATIONS) && (stats.numPresentation[zest.locationNumber] >= stoppingParam))
+            ||  ((stoppingCondition == ENTROPY)                && (entropy(zest.pdf) <= stoppingParam))
+            ||  ((stoppingCondition == STANDARD_DEVIATION)     && (stdev(zest.pdf) <= stoppingParam))
+            ||  ((stoppingCondition == MAXP)                   && (maxp(zest.pdf) >= stoppingParam))
+            ||  ((stoppingCondition == IQR)                    && (iqr(zest.pdf) <= stoppingParam))
+            ||  ((stats.numPresentation[zest.locationNumber] >= MAX_NUM_PRESENTATIONS))) {
+                stats.measuredThreshold[zest.locationNumber] = Math.round(mean(zest.pdf));
+                if (stats.measuredThreshold[zest.locationNumber] < 0)
+                    stats.measuredThreshold[zest.locationNumber] = 0;
+                finishedResults.add(results.remove(loc));
+#ifdef VERBOSE_OUTPUT
+                System.out.println("Finsihed with threhsold = "+ stats.measuredThreshold[zest.locationNumber]);
+#endif
+            }
+        }
+    }// end run()
+    
+    /**
+        Read in a list of function points from the given file.
+        This assumes one function per line, space or tab delimited points.
+        Returns the function read as a double[][] (null on error).
+        
+        @param num    The nunmber of functions.
+        @param length The number of points in the domain of the function.
+        @param in     The BufferedReader to read from.
+    */
+    public double[][] readDiscreteFunctions(int num, int length, BufferedReader in) {
+        int numRead=0, numPoints=0;    // loop variables
+        final double function[][] = new double[num][length];
+        try {
+            for(numRead = 0 ; numRead < num ; numRead++) {
+                String line = in.readLine();
+if (line == null) System.err.println("Shit, where's my line "+numRead);
+                StringTokenizer t = new StringTokenizer(line, " \t");
+                for (numPoints = 0; numPoints < length; numPoints++) {
+                    function[numRead][numPoints] = Double.parseDouble(t.nextToken());
+                }
+            }
+            in.close();
+        } catch (IOException e) {
+            System.out.println("Trouble reading a discrete function " + e);
+            return null;
+        } catch (NoSuchElementException e) {
+            System.out.println("The discrete function file is in the wrong format:");
+            System.out.println("Expecting "+num+" functions each of "+length+" points");
+            System.out.println("but got "+numRead+" functions, the last with "+numPoints+" points");
+            return null;
+        }
+        
+        return function;
+    }// end readDiscreteFunctions()
+    
+    /**
+        Return the expectaion of the points 0..array.length
+        It is not necessary for the values of vals to sum to 1, scaling is performed here.
+        @param vals vals[i] contains the freqeuncy of i
+    */
+    private double mean(double vals[]) {
+        double sum = 0;
+        double weightedSum = 0;
+        for(int i = 0 ; i < vals.length ; i++) {
+            weightedSum += (i + stimulus.minExcitation) * vals[i];
+            sum         += vals[i];
+        }
+        return weightedSum/sum;
+    }// mean()
+    
+    /**
+        Return the standard deviation of the points 0..array.length
+        It is not necessary for the values of vals to sum to 1, scaling is performed here.
+        
+        @param vals vals[i] contains the freqeuncy of i
+    */
+    private double stdev(double vals[]) {
+        double sum = 0;
+        double weightedSum = 0;
+        double weightedSumSqr = 0;
+        
+        for(int i = 0 ; i < vals.length ; i++) {
+            weightedSum    += (i + stimulus.minExcitation) * vals[i];
+            weightedSumSqr += (i + stimulus.minExcitation) * (i + stimulus.minExcitation) * vals[i];
+            sum            += vals[i];
+        }
+        weightedSum    /= sum;
+        weightedSumSqr /= sum;
+        
+        return Math.sqrt(weightedSumSqr - weightedSum*weightedSum);
+    }// stdev()
+    
+    /**
+        Return the entropy of the points 0..array.length
+        It is not necessary for the values of vals 
+        to sum to 1, scaling is performed here.
+        
+        @param vals vals[i] contains the freqeuncy of i
+    */
+    private double entropy(double vals[]) {
+        double sum = 0;
+        double entropy = 0;
+        for(int i = 0 ; i < vals.length ; i++) 
+            sum += vals[i];
+
+        for(int i = 0 ; i < vals.length ; i++) {
+            double p = vals[i]/sum;
+            entropy -= p * Math.log(p);
+        }
+
+        return entropy / Math.log(2.0);
+    }// entropy()
+
+    /**
+        Return the maximum probability of points 0..array.length
+        It is not necessary for the values of vals 
+        to sum to 1, scaling is performed here.
+        
+        @param vals vals[i] contains the freqeuncy of i
+    */
+    protected double maxp(double vals[]) {
+    double max = 0.0;
+    for (int i=0; i< vals.length; i++)
+    {
+        if (max < vals[i])
+        {
+        max = vals[i];
+        }
+    }
+    return max;
+    }// maxp()
+
+    /**
+        Return the inter-quartile range of points 0..array.length
+        It is not necessary for the values of vals 
+        to sum to 1, scaling is performed here.
+        
+        @param vals vals[i] contains the freqeuncy of i
+    */
+    protected double iqr(double vals[]) {
+    double lo = 0, hi = 0;
+    double sum = 0, accum = 0;
+    
+        for(int i = 0 ; i < vals.length ; i++) 
+            sum += vals[i];
+    
+        for(int i = 0 ; (i < vals.length ) && (accum < 0.25) ; i++) 
+    {
+        accum += vals[i]/sum;
+        lo = i - 1;
+    }
+
+    accum = 0;
+        for(int i = 0 ; (i < vals.length ) && (accum < 0.75) ; i++) 
+    {
+        accum += vals[i]/sum;
+        hi = i - 1;
+    }
+    
+        return hi - lo;
+    }// iqr()
+
+    /**
+        Overwrite a[i] with a[i]*b[i] for all i.
+        
+        @param a Pdf to scale
+        @param b Array of scaling factors
+    */
+    private void scalePdf(double a[], double b[]) {
+        int n;
+        
+        n = (a.length <= b.length) ? a.length : b.length;
+        
+        if (a.length != b.length)
+            System.err.println("Warning: "+this.getClass().getName()+".scalePdf is multiplying two arrays that are not the same length");
+            
+        for(int i = 0 ; i < n ; i++)
+            a[i] *= b[i];
+    }// multiply()
+    
+    /**
+        Create an array of discrete function values equal to the lf supplied 
+        translated along the x axis so that the point i where lf[i] == lfAlignmentPt
+        aligns with the stimValue.
+
+        Assuming that the base lf is a reversed FOS curve (ie low probs at 0).
+        A yes response (invert) should multiply by reverse FOS, which is the lf aligned.
+        A no response should multiply by 1 - (reversed FOS), which is aligned.
+        
+        When the alignment exceeds the domain of the lf, the end points are extended as 
+        far as necessary. ie the new lf gets as many lf[index][0]'s on the left and 
+        lf[index][domain-1]'s on the right to fill the new lf array.
+        
+        @param lf     lf to slide along
+        @param value  The stim value to align with (need to take stimulus.minExcitation to get index)
+        @param yes    Flag indicating if response was a yes.
+    */
+    private double []alignLf(double lf[], int value, boolean yes) {
+        value -= stimulus.minExcitation;
+
+        double newLf[] = (double [])lf.clone();
+
+        if (!yes) {
+            for(int i = 0 ; i < newLf.length ; i++)
+                newLf[i] = 1 - newLf[i];
+        }
+        int alignIndex = -1;
+        for(int j = 0 ; (j < newLf.length) && (alignIndex == -1 ); j++)
+            if (lf[j] == lfAlignmentPt)
+                alignIndex = j;
+        if (alignIndex == -1) {
+            System.err.println("PANIC!!! Couldn't find "+lfAlignmentPt+" in lf");
+            return null;
+        }
+#ifdef VERBOSE_OUTPUT
+        System.out.println("After invert: ");
+        for(int z = 0 ; z < newLf.length ; z++) 
+            System.out.print(newLf[z]+" ");
+        System.out.println("\nabout "+alignIndex);
+#endif
+
+        //             v
+        // 0 1 2 3 4 5 6 7 8 9 --> 0 0 0 0 1 2 3 4 5 6 
+        //       a
+        //
+        //       v     
+        // 0 1 2 3 4 5 6 7 8 9 --> 3 4 5 6 7 8 9 9 9 9 
+        //             a
+
+        if (value > alignIndex) {
+            for(int i = newLf.length - 1 ; i >= value - alignIndex ; i--)
+                newLf[i] = newLf[i - (value - alignIndex)];
+            for(int i = value - alignIndex - 1; i > 0 ; i--)
+                newLf[i] = newLf[0];
+        } else if (value < alignIndex) {
+            for(int i = 0 ; i < newLf.length - 1 - (alignIndex - value) ; i++)
+                newLf[i] = newLf[i + (alignIndex - value)];
+            for(int i = newLf.length - 1 - (alignIndex - value) ; i < newLf.length ; i++)
+                newLf[i] = newLf[newLf.length - 1];
+        }
+
+#ifdef VERBOSE_OUTPUT
+        System.out.println("after slide: ");
+        for(int z = 0 ; z < newLf.length ; z++) 
+            System.out.print(newLf[z]+" ");
+        System.out.print("\n");
+#endif
+
+        return newLf;
+    }//alignLf()
+
+    /**
+        Return a pdf for each location that is formed by adding the normals pdf
+        age adjusted from 45 to the age given, and the diseased pdf.
+        
+        The new pdf is given by:
+        slide = (age - 45) * ageAdjSlope;
+        cpdf[location][thresh] = pdfWeight * npdf[location][thresh+slide] + gpdf[location][thresh];
+    
+        and npdf[l][x] = 0, where 0 <= x < |slide| and slide < 0.
+                         or where x > domain-slide and slide > 0.
+
+        A minimum probability of PDF_FLOOR is imposed so that no location has a zero
+        probability. cpdf is then normalised so that each pdf sums to 1.
+
+        @param age The age of the patient 
+    */
+    double [][]makeCombinedPdf(int age) {
+        double cpdf[][] = new double[stimulus.numLocations][domain];
+        int slide = (int)Math.round((age-45) * ageAdjSlope);
+//System.err.println("Slide="+slide);
+//System.err.println("Age="+age);
+//System.err.println("Slope="+ageAdjSlope);
+        for(int loc = 0 ; loc < stimulus.numLocations ; loc++)
+            for(int thresh = 0 ; thresh < domain ; thresh++) {
+                cpdf[loc][thresh] = gpdf[loc][thresh];
+                if ((thresh+slide >= 0) && (thresh+slide < domain))
+                    cpdf[loc][thresh] += pdfWeight * npdf[loc][thresh+slide];
+            }
+
+            // go through and set any probs < PDF_FLOOR to 0
+            // count them ,and keep a sum.
+        int    zeroCount[] = new int[stimulus.numLocations];
+        double sum[]       = new double[stimulus.numLocations];
+        double newSum[]    = new double[stimulus.numLocations];
+        for(int loc = 0 ; loc < stimulus.numLocations ; loc++) {
+            sum[loc]       = 0;
+            zeroCount[loc] = 0;
+            newSum[loc]    = 0;
+        }
+
+        for(int loc = 0 ; loc < stimulus.numLocations ; loc++)
+            for(int thresh = 0 ; thresh < domain ; thresh++)
+                sum[loc] += cpdf[loc][thresh];
+
+        for(int loc = 0 ; loc < stimulus.numLocations ; loc++)
+            for(int thresh = 0 ; thresh < domain ; thresh++) {
+                cpdf[loc][thresh] /= sum[loc];
+                if (cpdf[loc][thresh] < PDF_FLOOR) {
+                    cpdf[loc][thresh] = 0;
+                    zeroCount[loc]++;
+                }
+            }
+        
+            // now go through and convert all 0's to 
+            // 1/(1/PDF_FLOOR - zeroCount[loc])
+            // then divide through by the new newSum to normalise to 1
+        for(int loc = 0 ; loc < stimulus.numLocations ; loc++) {
+            for(int thresh = 0 ; thresh < domain ; thresh++) {
+                if (cpdf[loc][thresh] == 0) 
+                    cpdf[loc][thresh] = 1 / (1/PDF_FLOOR - zeroCount[loc]);
+            }
+            newSum[loc] = 1/(1-zeroCount[loc] * PDF_FLOOR);
+        }
+
+        for(int loc = 0 ; loc < stimulus.numLocations ; loc++)
+            for(int thresh = 0 ; thresh < domain ; thresh++) {
+                cpdf[loc][thresh] /= newSum[loc];
+                //if (cpdf[loc][thresh] < PDF_FLOOR)
+                 //   System.err.print("SHIT - I stuffed up the maths!");
+            }
+
+        return cpdf;
+    }// makeCombinedPdf()
+
+
+    public void localFinish() { /* overide with tidy up routines */ ; }
+}// end TPZest class

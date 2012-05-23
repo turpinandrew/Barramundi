@@ -1,0 +1,210 @@
+/**
+	Class to provide controlling methods for the HFA.
+	
+   	@author Steven Burrows (stburrow@cs.rmit.edu.au)
+	@version 0.1 Aug 2005
+*/
+
+package Barramundi;
+
+import java.io.*;
+import java.util.*;
+#ifdef COMMAPI_PRESENT
+import javax.comm.*;
+#endif
+
+public class HFA {
+#ifdef COMMAPI_PRESENT
+    private SerialPort serialPort;
+    private OutputStream outputStream;
+    private InputStream inputStream;
+    private long timeOfLastFlash;
+    private boolean debugNoSerial;
+
+    public HFA(String portName, int baudRate, boolean debugNoSerial)
+    {
+        this.debugNoSerial = debugNoSerial;
+
+		System.err.println("About to open Serial port "+portName+"...");
+        Enumeration portList = CommPortIdentifier.getPortIdentifiers();
+		if (!portList.hasMoreElements())
+			System.err.println("Cannot find any ports!");
+        while (portList.hasMoreElements())
+        {
+            CommPortIdentifier portId = (CommPortIdentifier)portList.nextElement();
+            if (portId.getName().equals(portName)) 
+            {
+                try {
+                    SerialPort serialPort = (SerialPort)portId.open("HFA", 2000);
+                    outputStream = serialPort.getOutputStream();
+                    inputStream  = serialPort.getInputStream();
+                    serialPort.setSerialPortParams(baudRate,
+                        SerialPort.DATABITS_8,
+                        SerialPort.STOPBITS_1,
+                        SerialPort.PARITY_NONE);
+
+					System.err.println("Serial port "+portName+" open.");
+                } catch (UnsupportedCommOperationException e) {
+                        System.err.println("Trouble setting port params "+ e);
+                } catch (IOException e) {
+                        System.err.println("IO "+ e);
+                } catch (PortInUseException e) {
+                    System.err.println("Sorry, "+portName+" is already in use.");
+                }
+            }
+        }
+        timeOfLastFlash = -1;
+    }//HFA()
+
+	// Out of slave mode.
+    public void wakeUp()
+	{ 
+		send("BK1");
+		send("WU");
+	}
+
+    public void move(int x, int y)     
+    { 
+        if ((x < -35) || (x > 35) || (y < -35) || (y > 35))
+            System.err.println("Illegal move command: MP"+x+","+y);
+        else
+            send("MR"+x+","+y); 
+    }
+
+    public void setIntensity(int i)
+	{
+		send("IN"+i);
+	}
+
+    public void flash()                
+    { 
+        send("FL"); 
+        timeOfLastFlash = System.currentTimeMillis(); 
+    }
+
+    public void setSpotsize(int spotSize) 
+    {
+        if ((spotSize > 5) || (spotSize < 1))
+            System.err.println("Bad spot size in setSpotsize()");
+        else
+            send("AP"+spotSize);
+    }
+    /**
+        @param duration Time since last flash to wait for a press
+        @return Actual duration between flash and press, if button is
+                pressed within the time limit. If button is not pressed
+                then will return a time >= duration;
+            
+        @return time between flash and press, or duration if button not pressed.
+    */
+    public int buttonPressed(int duration)  
+    { 
+        if (timeOfLastFlash == -1)
+            return duration + 1;
+
+        boolean pressed = false;
+        while ((System.currentTimeMillis() - timeOfLastFlash < (long)duration) && !pressed)
+        {
+            pressed = send("BT").equals("C11"); 
+        }
+        return (int)(System.currentTimeMillis() - timeOfLastFlash);
+    }
+
+    /** valid values of spot size are 1, 2, 3, 4, 5 */
+    public void sleep(int spotSize) 
+    {
+        if ((spotSize > 5) || (spotSize < 1))
+            System.err.println("Bad spot size in sleep() call");
+        else
+        {
+            send("SL");
+            //send("BK0");
+            //send("LB0");
+            send("AP"+spotSize);
+        }
+    }
+
+    /** draw a flashing light circle */
+    public void circle(double radius)
+    {
+        for(double theta = 0 ; theta < 2* Math.PI ; theta += Math.PI/6)
+        {
+            int x = (int)Math.round(radius * Math.sin(theta));
+            int y = (int)Math.round(radius * Math.cos(theta));
+
+            move(x,y);
+            flash();
+        }
+    }//HFAcircle()
+
+    /** get numChars from serial port and return them as a String */
+    private String get(int numChars)
+    {
+        char rec[] = new char[numChars];
+
+        try {
+            for(int i = 0 ; i < numChars ; i++)
+            {
+                rec[i] = (char)inputStream.read();
+             //   System.out.println("c="+rec[i]);
+            }
+        } catch (IOException e) {
+            System.err.println("Trouble reading 3 chars from/to the HFA");
+        }
+
+        return new String(rec);
+    }//get()
+
+    /** Add a \r to the end of the string and write it to the port.
+        The string of commands could be several commands separated by a space
+        so make sure each one gets adn ACK/NAK/Cxx.
+
+        @return ACK, NAK, Cxx (ie the return string from the HFA). 
+	  @assertion The string should not contain more than one command.
+    */
+    private String send(String s)  
+    {
+        String result = "ERROR";
+
+        if (debugNoSerial)
+        {
+			System.out.println("snd "+s+" to hfa");
+            return "ACK";
+        }
+
+        try {
+            int i = 0;
+            while (!result.substring(0,3).equals("ACK") && (i < 1000))
+            {
+                if (s.equals("SL"))   // first time it pays to "flush" the channel with a \r
+                    outputStream.write(13);
+                outputStream.write(s.getBytes());
+                outputStream.write(13);
+                outputStream.flush();
+
+                result = get(4); // includes \r
+
+                i++;
+            }
+
+            if (i == 1000)
+                System.out.println("TROUBLE!!!! *********************");
+            else 
+                if (s.equals("BT"))
+                    result = get(3);  // no \r
+            
+          //      System.out.println(result);
+        } catch (IOException e) {
+            System.err.println("Trouble reading/writing "+s+" from/to the HFA");
+        }
+
+        return result;
+    }// send()
+
+
+    public String toString() {
+	    return serialPort.toString() + "\nSerial port debug mode is "+debugNoSerial;
+    }
+
+#endif
+}

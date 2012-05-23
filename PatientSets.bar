@@ -1,0 +1,7 @@
+Example G_1 fp=0    fn=0   ~0~0~normalAA45-24-2.pat~Seen_G_1p0~0.0~0.0
+Example G_3 fp=0.05 fn=0.15~0~0~normalAA45-24-2.pat~Seen_G_3p0~0.5~0.15
+Example G_5 fp=0.30 fn=0.30~0~0~normalAA45-24-2.pat~Seen_G_5p0~0.30~0.30
+---
+tt=33 G1 fp=0  fn=0 ~0~0~single.pat~Seen_G_1p0~0.0~0.0
+tt=33 G3 fp=10 fn=10~0~0~single.pat~Seen_G_3p0~0.10~0.10
+tt=33 G5 fp=20 fn=20~0~0~single.pat~Seen_G_5p0~0.20~0.20

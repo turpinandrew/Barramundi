@@ -1,0 +1,26 @@
+/**
+	Test class for HFA.
+	
+   	@author Steven Burrows (stburrow@cs.rmit.edu.au)
+	@version 0.1 Sep 2005
+*/
+
+package Barramundi;
+
+import java.io.*;
+import java.util.*;
+
+#ifdef COMMAPI_PRESENT
+import javax.comm.*;
+#endif
+
+public class TestHFA
+{
+	public static void main(String[] args) 
+	{
+#ifdef COMMAPI_PRESENT
+		HFA hfa = new HFA("COM1", 2400, true);
+		System.out.println(hfa.toString());
+#endif
+	}
+}

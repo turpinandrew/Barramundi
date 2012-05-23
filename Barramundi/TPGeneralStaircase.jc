@@ -1,0 +1,324 @@
+package Barramundi;
+
+import java.io.*;
+import java.util.*;
+
+/**
+    Staircase using steps of 4dB, 2dB, 1dB, 1dB, ...
+    Threshold is average of numLastReversals values at reversal.
+    A total of numReversals reversals.  
+    Starting point as input parameter.
+	Num up and num down is input param.
+    
+    @author Steven Burrows (stburrow@cs.rmit.edu.au)
+    @version 0.1 Sep 2005
+
+*/
+class TPGeneralStaircase extends AbstractTestProcedure {
+
+    /** num times not seen 0 or seen 40 b4 stop */ private final int NUM_TIMES_FLOOR_OR_CEILING = 4;
+    /** input startGuess: -1 for 24-2 growth  */ int inputStartGuess;
+
+    /** the total number of presentations */ int numPresentations;
+
+    // Added by Steven Burrows September 2005.
+	/** X and Y coordinates from the locations.txt file. */
+	int numUp;
+	int numDown;
+	int numReversals;
+	int numLastReversals;
+	String stairStepsString;
+	Vector stairSteps;
+    String fName; // for verbose output
+
+    /**
+        Constructor.
+    */
+    TPGeneralStaircase(Double numUp, Double numDown, Double numReversals, 
+					   Double numLastReversals, Double startGuess, String stairStepsString) {
+            /* This call sets the name of the procedure that will be printed in the 
+               results file (the first arg).
+             */
+        super("Staircase: "+numUp+"-up "+numDown+"-down r= "+numReversals+" av= "+numLastReversals+
+               " step= "+stairStepsString+" sg="+startGuess.toString());
+
+        inputStartGuess = startGuess.intValue();
+		this.numUp = numUp.intValue();
+		this.numDown = numDown.intValue();
+		this.numReversals = numReversals.intValue();
+		this.numLastReversals = numLastReversals.intValue();
+		this.stairStepsString = stairStepsString;
+
+		stairSteps = new Vector();
+		tokeniseSteps(stairSteps, stairStepsString);
+
+		if (this.numLastReversals > this.numReversals)
+		{
+			System.err.println("Error: 'numLastReversals' cannot be greater than 'numReversals'. " +
+				               "Please correct TestProcedures.bar. Program terminating.");
+			System.exit(1);
+		}
+
+		if (this.numReversals != stairSteps.size())
+		{
+            System.err.println("Error: 'numReversals' "+this.numReversals+" must be the same as 'stairSteps.size()'"+stairSteps.size()+". " +
+				               "Please correct TestProcedures.bar. Program terminating.");
+			System.exit(1);
+		}
+
+		// Modified by Steven Burrows September 2005.
+		fName = new String("tpGeneralStaircase.out");
+    }
+
+	public void tokeniseSteps(Vector stairSteps, String stairStepsString)
+	{
+		StringTokenizer strtok = new StringTokenizer(stairStepsString, ",");
+
+		while (strtok.hasMoreTokens())
+		{
+			Integer value = new Integer(strtok.nextToken());
+			stairSteps.add(value);
+		}
+	}
+
+    /** 
+        Show each stimulus, recording response by calling the seen() function.
+        Record information in "stats" for this patient.
+    */
+    public void run(Patient p) {
+            // these hold finsished and unfinished locations respectively
+		Vector results = new Vector(stimulus.numLocations);
+		Vector finishedResults = new Vector();
+
+		int stopReversals = numReversals; 
+
+            // create Stair object for each location
+		for (int i = 0; i < points.size(); i++)
+		{
+			Point point = (Point) points.get(i);
+			int x = (int) point.getX();
+			int y = (int) point.getY();
+			int number = (int)point.getNumber();
+
+			int stepSize = ((Integer) stairSteps.get(0)).intValue();
+			results.add(new Stair(x, y, number, inputStartGuess, stepSize, numUp, numDown));   
+
+        	stats.numPresentation[number] = 0;
+		}
+
+        numPresentations = 0;
+        
+        // Set the inputThresholds for this patient.
+        stats.inputThreshold = (double [])p.threshold.clone();
+
+#ifdef VERBOSE_OUTPUT
+		try 
+		{
+            BufferedWriter bufWr = new BufferedWriter(new FileWriter(fName));
+
+            bufWr.write("START:");
+            bufWr.write(new Date(System.currentTimeMillis()).toString() + "\n\n");
+#endif
+
+            while (results.size() > 0)
+            {
+                    // choose random location
+				int loc     = (int) Math.floor(Math.random() * results.size());
+                Stair stair = (Stair) results.get(loc);
+
+                int x         = stair.locx;
+                int y         = stair.locy;
+                int intensity = stair.currentStim;
+                if (intensity < stimulus.minExcitation) 
+                    intensity = (int)stimulus.minExcitation;
+                if (intensity > stimulus.maxExcitation) 
+                    intensity = (int)stimulus.maxExcitation;
+                
+#ifdef VERBOSE_OUTPUT
+				bufWr.write("Location "+stair.locationNumber+" ("+x+","+y+"). Intensity = "+intensity+" ");
+                System.out.print("Location "+stair.locationNumber+" ("+x+","+y+
+						"). Intensity = "+intensity+
+						". ");
+#endif
+
+				stair.numPresentations++;
+        		stats.numPresentation[stair.locationNumber]++;
+
+				boolean seen = p.seenObject.seen(intensity, p.threshold[stair.locationNumber], numPresentations, x, y);
+
+#ifdef VERBOSE_OUTPUT
+                if (seen) { 
+					bufWr.write("Seen. ");
+					System.out.print("Seen. ");
+				} else {
+					bufWr.write("Not Seen. ");
+					System.out.print("Not Seen. ");
+				}
+#endif
+
+                if ((!seen) && (intensity == stimulus.minExcitation))
+					stair.numTimesMissedZero++;
+                if ( (seen) && (intensity == stimulus.maxExcitation))
+					stair.numTimesSeenForty++;
+
+				if (stair.numTimesMissedZero >= NUM_TIMES_FLOOR_OR_CEILING ) {
+					stair.done = true;
+					finishedResults.add(results.remove(loc));
+					stats.measuredThreshold[stair.locationNumber] = (int)stimulus.minExcitation;
+				}
+				else if (stair.numTimesSeenForty >= NUM_TIMES_FLOOR_OR_CEILING ) {
+					stair.done = true;
+					finishedResults.add(results.remove(loc));
+					stats.measuredThreshold[stair.locationNumber] = (int)stimulus.maxExcitation;
+				} else {  // update counters, check for reversal, change stim level if necessary
+					if (seen) {
+						stair.upCounter++;
+						stair.downCounter = 0;
+					} else {
+						stair.downCounter++;
+						stair.upCounter = 0;
+					}
+							
+					    // Check if a reversal or change of stimulus is needed.
+                    boolean reversal   = false;
+                    boolean changeStim = false;
+					if (stair.upCounter == numUp) {
+					    reversal = stair.direction == Stair.DOWN;
+                        stair.direction = Stair.UP;
+						stair.upCounter = 0;
+                        changeStim = true;
+                    } else if (stair.downCounter == numDown) {
+					    reversal = stair.direction == Stair.UP;
+                        stair.direction = Stair.DOWN;
+						stair.downCounter = 0;
+                        changeStim = true;
+                    }
+    
+					    // Process a reversal if detected.
+				    if (reversal) {
+#ifdef VERBOSE_OUTPUT
+						System.out.print("Reversal: "+stair.currentStim+".");
+						bufWr.write("Reversal: "+stair.currentStim+".");
+#endif
+
+						stair.numReversals++;
+    
+						    // Only calculate the average for the "num of last reversals to average".
+						if ((numLastReversals) > (numReversals - stair.numReversals))
+							stair.averageReversalStim += (double)stair.currentStim / (double)numLastReversals;
+    
+						    // Don't update the stair.step value after the last reversal
+						if (stair.numReversals < numReversals)
+						   stair.step = ((Integer) stairSteps.get(stair.numReversals)).intValue();
+                        else {
+							stair.done = true;
+							stats.measuredThreshold[stair.locationNumber] = stair.averageReversalStim;
+							finishedResults.add(results.remove(loc));
+#ifdef VERBOSE_OUTPUT
+						    System.out.print("\nThreshold: "+stair.averageReversalStim+".");
+						    bufWr.write("\nThreshold: "+stair.averageReversalStim+".");
+#endif
+						}
+					}
+                        // now alter the stimulus using correct step size if necessary
+                    if (changeStim) {
+                        if (stair.direction == Stair.UP)
+						    stair.currentStim += stair.step;
+                        else 
+						    stair.currentStim -= stair.step;
+                    }
+                }
+
+#ifdef VERBOSE_OUTPUT
+                bufWr.flush();
+				bufWr.write("\n");
+				System.out.print("\n");
+#endif
+
+			} // End while loop.
+
+#ifdef VERBOSE_OUTPUT
+            printResults(bufWr, finishedResults);
+    
+            bufWr.write("END:");
+            bufWr.write(new Date(System.currentTimeMillis()).toString() + "\n");
+            bufWr.flush();
+            bufWr.close();
+        }
+		catch (IOException e)
+		{
+            System.err.println("Couldn't write to the output file!");
+        }
+#endif
+
+		/*for (int i = 0; i < points.size(); i++)
+		{
+			System.out.println(
+						"lastSS = "+stats.measuredThreshold[i]+
+						"numP = "+stats.numPresentation[i]
+			);
+		}*/
+		
+		/*System.out.println("input start guess: " + inputStartGuess);
+		System.out.println("num up: " + numUp);
+		System.out.println("num down: " + numDown);
+		System.out.println("num reversals: " + numReversals);
+		System.out.println("num last reversals: " + numLastReversals);
+		System.out.println("stair steps string: " + stairStepsString);
+		System.out.print  ("stair steps values: ");
+		for (int i = 0; i < stairSteps.size(); i++)
+		{
+			System.out.print(stairSteps.get(i) + ", ");
+		}
+		System.out.println();*/
+
+    } // End run().
+    
+
+
+    /**
+    * Assumes results[i][j] is num seen at location i for point j.
+    */
+    private void printResults(BufferedWriter bufWr, Vector results) throws IOException
+    {
+        System.out.print("\n");
+        bufWr.write("\n");
+        for(int i = 0 ; i < results.size() ; i++)
+        {
+            /*
+			System.out.print("\t\t(");
+            nicePrint(System.out, ((Stair) results.get(i)).locx);
+            System.out.print(",");
+            nicePrint(System.out, ((Stair) results.get(i)).locy);
+            System.out.print(") ");
+            nicePrint(System.out, ((Stair) results.get(i)).lastSeenStim);
+            System.out.print("\n");
+			*/
+
+            bufWr.write("(");
+            nicePrint(bufWr, ((Stair) results.get(i)).locx);
+            bufWr.write(",");
+            nicePrint(bufWr, ((Stair) results.get(i)).locy);
+            bufWr.write(") ");
+            nicePrint(bufWr, ((Stair) results.get(i)).lastSeenStim);
+            bufWr.write("\n");
+        }
+
+		System.out.print("\n");
+        bufWr.write("\n");
+    }// printResults()
+
+    private void nicePrint(PrintStream os, int i) throws IOException
+    {
+        if ((i > 0) && (i < 10)) os.print(" "+i);
+        else os.print(i);
+    }
+    private void nicePrint(BufferedWriter os, int i) throws IOException
+    {
+        if ((i > 0) && (i < 10)) { os.write(" "); os.write(Integer.toString(i));}
+        else os.write(Integer.toString(i));
+    }
+
+    public void localFinish() { ; }
+    public void localSetup() { ; }
+}

@@ -1,0 +1,498 @@
+package Barramundi;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.StringTokenizer;
+import java.util.Vector;
+import java.util.NoSuchElementException;
+import javax.swing.JOptionPane;
+import java.lang.Double;
+import java.lang.Math;
+import java.lang.reflect.Method;
+
+/**
+    A test procedure that implements Shonraj's SEMU algorithm
+    Pdf and lf are discrete.
+
+    This version kick starts (KS) the ZEST by multiplying the 
+    provided prior with the responses form the supra-threshold
+    simulus(i).
+    
+    @author Andrew Turpin (turpinandrew@hotmail.com)
+    @version 1.0 May 2012
+*/
+public class TPSEMU_KS extends AbstractTestProcedure {
+
+    /** Structural prior (supra threshold value)*/ int sp;
+    /** Age prior (supra threshold value)       */ int ap;
+    /** Number of supra threshold presentations required to be seen to pass for Age prior       */ int mss_ap_pass;
+    /** Maximum number of supra threshold presentations to show for Age prior                   */ int mss_ap_show;
+    /** Number of supra threshold presentations required to be seen to pass for Structural prior*/ int mss_sp_pass;
+    /** Maximum number of supra threshold presentations to show for Structural prior            */ int mss_sp_show;
+    /** Paramater that controls stopping      */ double stoppingParam;
+    /** Type of stopping condition            */ int stoppingCondition;
+    /** stopping condition 1                  */ static final int NUMBER_OF_PRESENTATIONS = 1;
+    /** stopping condition 2                  */ static final int STANDARD_DEVIATION     = 2;
+    /** stopping condition 3                  */ static final int ENTROPY                = 3;
+    /** stopping condition 4                  */ static final int MAXP                   = 4;
+    /** stopping condition 5                  */ static final int IQR                    = 5;
+
+    /** The number of data points in a pdf/lf */ int domain;
+    /** pdf filename                          */ String pdfFilename;
+    /** likelihood function filename          */ String lfFilename;
+    /** pdf                                   */ double pdf[];
+    /** likelihood function                   */ double lf[];
+    
+    /** 3rd argument to alignLf() */ protected final static boolean ALIGN_YES = true;
+    /** 3rd argument to alignLf() */ protected final static boolean ALIGN_NO  = false;
+
+    /** max number of presentations allowed    */ static int MAX_NUM_PRESENTATIONS = 1000;
+
+    /**
+       Use this constructor to pass a constant stop condition.
+
+        @param sp           The first supra-threshold value to use (structural prior)
+        @param mss_sp_pass  Multi-sampling strategy for SP 
+        @param mss_sp_show  Multi-sampling strategy for SP 
+        @param ap           The second supra-threshold value to use (age prior)
+        @param mss_ap_pass  Multi-sampling strategy for SP 
+        @param mss_ap_show  Multi-sampling strategy for SP 
+        @param pdfFilename  The name of the file from which to read pdf for ZEST.
+        @param lfFilename   The name of the file from which to read lf.
+        @param stopCondition Either NUMBER_OF_PRESENTATIONS or STANDARD_DEVIATION or ENTROPY or MAXP or IQR.
+        @param stopP         Value ot stopCondition to stop at.
+    */
+    TPSEMU_KS(Double sp, Double mss_sp_pass, Double mss_sp_show, 
+              Double ap, Double mss_ap_pass, Double mss_ap_show,
+              String pdfFilename, String lfFilename, String stopCondition, Double stopP)
+    {
+        super("SEMU SP= "+ sp + 
+                " (" + mss_sp_pass + " of " + mss_sp_show +  
+                ") AP= "+ ap +
+                " (" + mss_ap_pass + " of " + mss_ap_show +  
+                ") " + pdfFilename + " " + lfFilename+" "+stopCondition+" "+stopP);
+
+        this.sp = (int)Math.round(sp.doubleValue());
+        this.ap = (int)Math.round(ap.doubleValue());
+        if (sp > ap) {
+            System.err.println("SP is bigger than AP, which is not allowed.");
+            JOptionPane.showMessageDialog(null,"SP is bigger than AP, which is not allowed.","Barramundi - Error",JOptionPane.ERROR_MESSAGE);
+        }
+
+        this.mss_ap_show = (int)Math.round(mss_ap_show.doubleValue());
+        this.mss_ap_pass = (int)Math.round(mss_ap_pass.doubleValue());
+        this.mss_sp_show = (int)Math.round(mss_sp_show.doubleValue());
+        this.mss_sp_pass = (int)Math.round(mss_sp_pass.doubleValue());
+        if (mss_sp_pass > mss_sp_show) {
+            System.err.println("The mulit-sampling strategy for SP is not valid.");
+            JOptionPane.showMessageDialog(null,"The mulit-sampling strategy for SP is not valid.","Barramundi - Error",JOptionPane.ERROR_MESSAGE);
+        }
+        if (mss_ap_pass > mss_ap_show) {
+            System.err.println("The mulit-sampling strategy for AP is not valid.");
+            JOptionPane.showMessageDialog(null,"The mulit-sampling strategy for AP is not valid.","Barramundi - Error",JOptionPane.ERROR_MESSAGE);
+        }
+
+        if (stopCondition.compareTo("NUMBER_OF_PRESENTATIONS") == 0)
+            stoppingCondition = NUMBER_OF_PRESENTATIONS;
+        else if (stopCondition.compareTo("STANDARD_DEVIATION") == 0)
+            stoppingCondition = STANDARD_DEVIATION;
+        else if (stopCondition.compareTo("ENTROPY") == 0)
+            stoppingCondition = ENTROPY;
+        else if (stopCondition.compareTo("MAXP") == 0)
+            stoppingCondition = MAXP;
+        else if (stopCondition.compareTo("IQR") == 0)
+            stoppingCondition = IQR;
+        else {
+            JOptionPane.showMessageDialog(null,"The stopping condition "+stopCondition+" for TPSEMU_KS is unknown","Barramundi - Error",JOptionPane.ERROR_MESSAGE);
+            System.err.println("The stopping condition "+stopCondition+" for TPSEMU_KS is unknown");
+        }
+
+            //Set the stopping parameter to the static value of stopP.
+        stoppingParam = stopP.doubleValue();
+
+        this.pdfFilename = pdfFilename;
+        this.lfFilename  = lfFilename;
+    }
+    
+    /** 
+        Read in pdf and lf (has to be done here as domain not setable in constructor)
+        Reverse lf's so that they are flipped FOSs
+    */
+    public void localSetup() {
+        try {
+            BufferedReader pdfFile = new BufferedReader(new FileReader(pdfFilename));
+            BufferedReader lfFile = new BufferedReader(new FileReader(lfFilename));
+
+            domain = (int)((stimulus.maxExcitation - stimulus.minExcitation)/stimulus.stepExcitation) + 1;
+
+            pdf = readDiscreteFunction(domain, pdfFile);
+            lf  = readDiscreteFunction(domain, lfFile);
+            
+        } catch (FileNotFoundException e) {
+            JOptionPane.showMessageDialog(null,"Could not find pdf/lf/param file\n" + e,"Barramundi - Error",JOptionPane.ERROR_MESSAGE);
+        }
+            // reverse lfs
+        for(int i = 0 ; i < lf.length/2 ; i++) {
+                double temp = lf[i];
+                lf[i] = lf[lf.length - 1 - i];
+                lf[lf.length - 1 - i] = temp;
+            }
+    }// localSetup()
+    
+    /** 
+        For each location
+            Present SP (possibly multiple times)
+            If failed, goto ZEST
+            Present max(AP,SP) (possibly multiple times)
+            If failed, goto ZEST
+            Return max(SP, AP)
+          ZEST: do a zest with params passed in.
+        Record information in "stats" for this patient.
+    */
+    public void run(Patient p) {
+        double combinedPdf[] = pdf.clone();
+        stats.inputThreshold = (double [])p.threshold.clone();
+
+            // just do each location in turn
+        for (int i = 0; i < points.size(); i++) {
+            int numPresentations = 0;
+            Point point = (Point) points.get(i);
+            int loc = (int)point.getNumber();
+
+            stats.numPresentation[loc] = 0;
+
+            int numShown = 0;
+            int numSeen  = 0;
+            while ((numShown < mss_sp_show) && (numSeen < mss_sp_pass)) {
+#ifdef VERBOSE_OUTPUT
+            System.out.print("Present SP= "+sp);
+#endif
+                numShown++;
+        	    stats.numPresentation[loc]++;
+                numPresentations++;
+                boolean seen = p.seenObject.seen(sp, p.threshold[loc], numPresentations, point.getX(), point.getY());
+                if (seen) {
+                    numSeen++;
+                    scalePdf(combinedPdf, alignLf(lf, sp, ALIGN_YES));
+#ifdef VERBOSE_OUTPUT
+            System.out.println("Seen");
+#endif
+                } else
+                    scalePdf(combinedPdf, alignLf(lf, sp, ALIGN_NO));
+#ifdef VERBOSE_OUTPUT
+            System.out.println("Not Seen");
+#endif
+            }
+
+            if (numSeen == mss_sp_pass) {   // passed SP, now do AP
+                numShown = 0;
+                numSeen  = 0;
+                while ((numShown < mss_ap_show) && (numSeen < mss_ap_pass)) {
+#ifdef VERBOSE_OUTPUT
+                System.out.print("Present AP= "+ap);
+#endif
+                    numShown++;
+        	        stats.numPresentation[loc]++;
+                    numPresentations++;
+                    boolean seen = p.seenObject.seen(ap, p.threshold[loc], numPresentations, point.getX(), point.getY());
+                    if (seen) {
+                        numSeen++;
+                        scalePdf(combinedPdf, alignLf(lf, ap, ALIGN_YES));
+#ifdef VERBOSE_OUTPUT
+            System.out.println("Seen");
+#endif
+                    } else
+                        scalePdf(combinedPdf, alignLf(lf, ap, ALIGN_NO));
+#ifdef VERBOSE_OUTPUT
+            System.out.println("Not Seen");
+#endif
+                }
+            } else {
+                numSeen = -1;   // just in case numSeen accidently equals mss_ap_pass
+            }
+
+            if (numSeen != mss_ap_pass) {
+#ifdef VERBOSE_OUTPUT
+            System.out.print("TPSEMU_KS: Starting ZEST for location "+loc+".  Threshold = "+p.threshold[loc]+"\n=========================\n");
+            System.out.print("Pdf = ");
+            for(int j = 0 ; j < combinedPdf.length; j++)
+                System.out.print(combinedPdf[j]+" ");
+#endif
+                boolean finished = false;
+                while (!finished) {
+                    int stimValue = (int)Math.round(mean(combinedPdf));
+#ifdef VERBOSE_OUTPUT
+                    System.out.print("\nTPSEMU_KS: stimValue= " + stimValue );
+                    System.out.print(" stdev = " + stdev(combinedPdf));
+                    System.out.print(" entropy = " + entropy(combinedPdf));
+                    System.out.print(" maxp = " + maxp(combinedPdf)+"\n");
+#endif
+        	        stats.numPresentation[loc]++;
+                    numPresentations++;
+                    boolean seen = p.seenObject.seen(stimValue, p.threshold[loc], numPresentations, point.getX(), point.getY());
+                    if (seen) {
+                        scalePdf(combinedPdf, alignLf(lf, stimValue, ALIGN_YES));
+#ifdef VERBOSE_OUTPUT
+                        System.out.println("Seen");
+#endif              
+                    } else {
+                        scalePdf(combinedPdf, alignLf(lf, stimValue, ALIGN_NO));
+#ifdef VERBOSE_OUTPUT
+                        System.out.println("Not Seen");
+#endif              
+                    }
+
+                    if (((stoppingCondition == NUMBER_OF_PRESENTATIONS) && (stats.numPresentation[loc] >= stoppingParam))
+                    ||  ((stoppingCondition == ENTROPY)                && (entropy(combinedPdf) <= stoppingParam))
+                    ||  ((stoppingCondition == STANDARD_DEVIATION)     && (stdev(combinedPdf) <= stoppingParam))
+                    ||  ((stoppingCondition == MAXP)                   && (maxp(combinedPdf) >= stoppingParam))
+                    ||  ((stoppingCondition == IQR)                    && (iqr(combinedPdf) <= stoppingParam))
+                    ||  ((stats.numPresentation[loc] >= MAX_NUM_PRESENTATIONS))) {
+                        stats.measuredThreshold[loc] = Math.round(mean(combinedPdf));
+#ifdef VERBOSE_OUTPUT
+                        System.out.print("Finished with threhsold = "+ stats.measuredThreshold[loc]);
+                        System.out.println(" in "+ stats.numPresentation[loc] + " presentations");
+#endif              
+                        finished=true;
+                    }
+                }//zest while loop
+                combinedPdf = null;  // help gc
+            } else {
+                stats.measuredThreshold[loc] = ap;
+            }
+        }//location for loop
+    }// end run()
+    
+    /**
+        Read in a list of function points from the given file.
+        This assumes one function per line, space or tab delimited points.
+        Returns the function read as a double[][] (null on error).
+        
+        @param num    The nunmber of functions.
+        @param length The number of points in the domain of the function.
+        @param in     The BufferedReader to read from.
+    */
+    public double[] readDiscreteFunction(int length, BufferedReader in) {
+        int numPoints=0;    // loop variables
+        final double function[] = new double[length];
+        try {
+            String line = in.readLine();
+            if (line == null) throw(new NoSuchElementException());
+            StringTokenizer t = new StringTokenizer(line, " \t");
+            for (numPoints = 0; numPoints < length; numPoints++) {
+                function[numPoints] = Double.parseDouble(t.nextToken());
+            }
+            in.close();
+        } catch (IOException e) {
+            System.out.println("Trouble reading a discrete function " + e);
+            return null;
+        } catch (NoSuchElementException e) {
+            System.out.println("The discrete function file is in the wrong format:");
+            System.out.println("Expecting "+length+" points");
+            System.out.println("but got "+numPoints+" points");
+            return null;
+        }
+        
+        return function;
+    }// end readDiscreteFunction()
+    
+    /**
+        Return the expectaion of the points 0..array.length
+        It is not necessary for the values of vals to sum to 1, scaling is performed here.
+        @param vals vals[i] contains the freqeuncy of i
+    */
+    private double mean(double vals[]) {
+        double sum = 0;
+        double weightedSum = 0;
+        for(int i = 0 ; i < vals.length ; i++) {
+            weightedSum += (i + stimulus.minExcitation) * vals[i];
+            sum         += vals[i];
+        }
+        return weightedSum/sum;
+    }// mean()
+    
+    /**
+        Return the standard deviation of the points 0..array.length
+        It is not necessary for the values of vals to sum to 1, scaling is performed here.
+        
+        @param vals vals[i] contains the freqeuncy of i
+    */
+    private double stdev(double vals[]) {
+        double sum = 0;
+        double weightedSum = 0;
+        double weightedSumSqr = 0;
+        
+        for(int i = 0 ; i < vals.length ; i++) {
+            weightedSum    += (i + stimulus.minExcitation) * vals[i];
+            weightedSumSqr += (i + stimulus.minExcitation) * (i + stimulus.minExcitation) * vals[i];
+            sum            += vals[i];
+        }
+        weightedSum    /= sum;
+        weightedSumSqr /= sum;
+        
+        return Math.sqrt(weightedSumSqr - weightedSum*weightedSum);
+    }// stdev()
+    
+    /**
+        Return the entropy of the points 0..array.length
+        It is not necessary for the values of vals 
+        to sum to 1, scaling is performed here.
+        
+        @param vals vals[i] contains the freqeuncy of i
+    */
+    private double entropy(double vals[]) {
+        double sum = 0;
+        double entropy = 0;
+        for(int i = 0 ; i < vals.length ; i++) 
+            sum += vals[i];
+
+        for(int i = 0 ; i < vals.length ; i++) {
+            double p = vals[i]/sum;
+            entropy -= p * Math.log(p);
+        }
+
+        return entropy / Math.log(2.0);
+    }// entropy()
+
+    /**
+        Return the maximum probability of points 0..array.length
+        It is not necessary for the values of vals 
+        to sum to 1, scaling is performed here.
+        
+        @param vals vals[i] contains the freqeuncy of i
+    */
+    protected double maxp(double vals[]) {
+    double max = 0.0;
+    for (int i=0; i< vals.length; i++)
+    {
+        if (max < vals[i])
+        {
+        max = vals[i];
+        }
+    }
+    return max;
+    }// maxp()
+
+    /**
+        Return the inter-quartile range of points 0..array.length
+        It is not necessary for the values of vals 
+        to sum to 1, scaling is performed here.
+        
+        @param vals vals[i] contains the freqeuncy of i
+    */
+    protected double iqr(double vals[]) {
+    double lo = 0, hi = 0;
+    double sum = 0, accum = 0;
+    
+        for(int i = 0 ; i < vals.length ; i++) 
+            sum += vals[i];
+    
+        for(int i = 0 ; (i < vals.length ) && (accum < 0.25) ; i++) 
+    {
+        accum += vals[i]/sum;
+        lo = i - 1;
+    }
+
+    accum = 0;
+        for(int i = 0 ; (i < vals.length ) && (accum < 0.75) ; i++) 
+    {
+        accum += vals[i]/sum;
+        hi = i - 1;
+    }
+    
+        return hi - lo;
+    }// iqr()
+
+    /**
+        Overwrite a[i] with a[i]*b[i] for all i.
+        
+        @param a Pdf to scale
+        @param b Array of scaling factors
+    */
+    private void scalePdf(double a[], double b[]) {
+        int n;
+        
+        n = (a.length <= b.length) ? a.length : b.length;
+        
+        if (a.length != b.length)
+            System.err.println("Warning: "+this.getClass().getName()+".scalePdf is multiplying two arrays that are not the same length");
+            
+        for(int i = 0 ; i < n ; i++)
+            a[i] *= b[i];
+    }// multiply()
+    
+    /**
+        Create an array of discrete function values equal to the lf supplied 
+        translated along the x axis so that the point i where lf[i] == 0.5
+        aligns with the stimValue.
+
+        Assuming that the base lf is a reversed FOS curve (ie low probs at 0).
+        A yes response (invert) should multiply by reverse FOS, which is the lf aligned.
+        A no response should multiply by 1 - (reversed FOS), which is aligned.
+        
+        When the alignment exceeds the domain of the lf, the end points are extended as 
+        far as necessary. ie the new lf gets as many lf[index][0]'s on the left and 
+        lf[index][domain-1]'s on the right to fill the new lf array.
+        
+        @param lf     lf to slide along
+        @param value  The stim value to align with (need to take stimulus.minExcitation to get index)
+        @param yes    Flag indicating if response was a yes.
+    */
+    private double []alignLf(double lf[], int value, boolean yes) {
+        value -= stimulus.minExcitation;
+
+        double newLf[] = (double [])lf.clone();
+
+        if (!yes) {
+            for(int i = 0 ; i < newLf.length ; i++)
+                newLf[i] = 1 - newLf[i];
+        }
+        int alignIndex = -1;
+        for(int j = 0 ; (j < newLf.length) && (alignIndex == -1 ); j++)
+            if (lf[j] == 0.5)
+                alignIndex = j;
+        if (alignIndex == -1) {
+            System.err.println("PANIC!!! Couldn't find "+0.5+" in lf");
+            return null;
+        }
+#ifdef VERBOSE_OUTPUT
+        System.out.println("After invert: ");
+        for(int z = 0 ; z < newLf.length ; z++) 
+            System.out.print(newLf[z]+" ");
+        System.out.println("\nabout "+alignIndex);
+#endif
+
+        //             v
+        // 0 1 2 3 4 5 6 7 8 9 --> 0 0 0 0 1 2 3 4 5 6 
+        //       a
+        //
+        //       v     
+        // 0 1 2 3 4 5 6 7 8 9 --> 3 4 5 6 7 8 9 9 9 9 
+        //             a
+
+        if (value > alignIndex) {
+            for(int i = newLf.length - 1 ; i >= value - alignIndex ; i--)
+                newLf[i] = newLf[i - (value - alignIndex)];
+            for(int i = value - alignIndex - 1; i > 0 ; i--)
+                newLf[i] = newLf[0];
+        } else if (value < alignIndex) {
+            for(int i = 0 ; i < newLf.length - 1 - (alignIndex - value) ; i++)
+                newLf[i] = newLf[i + (alignIndex - value)];
+            for(int i = newLf.length - 1 - (alignIndex - value) ; i < newLf.length ; i++)
+                newLf[i] = newLf[newLf.length - 1];
+        }
+
+#ifdef VERBOSE_OUTPUT
+        System.out.println("after slide: ");
+        for(int z = 0 ; z < newLf.length ; z++) 
+            System.out.print(newLf[z]+" ");
+        System.out.print("\n");
+#endif
+
+        return newLf;
+    }//alignLf()
+
+    public void localFinish() { /* overide with tidy up routines */ ; }
+}// end TPSEMU_KS class
