@@ -17,6 +17,9 @@ import javax.comm.*;
 	    rather than inherent in the class definition. Killed the Seen_G_[HN|HG|HC]
 	    classes as a consequence.
 	    - Added a stack of getSeen_G_xpx calls.
+
+    Modified turpin 23 May 2012 
+        - added Russell variability
 	
    	@author Andrew Turpin (aturpin@discoveriesinsight.org)
 	@version 0.3 Jun 1999
@@ -140,7 +143,9 @@ public static Seen_G_x getSeen_G_9p6(Double falsePositiveRate, Double falseNegat
 public static Seen_G_x getSeen_G_9p7(Double falsePositiveRate, Double falseNegativeRate) { return new Seen_G_x(falsePositiveRate.doubleValue(), falseNegativeRate.doubleValue(), 9.7);}
 public static Seen_G_x getSeen_G_9p8(Double falsePositiveRate, Double falseNegativeRate) { return new Seen_G_x(falsePositiveRate.doubleValue(), falseNegativeRate.doubleValue(), 9.8);}
 public static Seen_G_x getSeen_G_9p9(Double falsePositiveRate, Double falseNegativeRate) { return new Seen_G_x(falsePositiveRate.doubleValue(), falseNegativeRate.doubleValue(), 9.9);}
-	
+
+public static Seen_Rus getSeen_Rus(Double falsePositiveRate, Double falseNegativeRate) { return new Seen_Rus(falsePositiveRate.doubleValue(), falseNegativeRate.doubleValue());}
+
 
 #ifdef COMMAPI_PRESENT
 	/**
@@ -384,4 +389,44 @@ public static Seen_G_x getSeen_G_9p9(Double falsePositiveRate, Double falseNegat
 				return s;
 		}
 	}//Seen_E2 class
+
+	/**
+		Seen_Rus(...)
+		Stimulus is seen if stimulus value is less than threshold, where threshold varies according 
+		to a Gaussian distribution about the mean value (threshold param) and standard deviation as
+        described by Russell et al ARVO 2011.
+
+		@param stimVal          The value of the stimulus presented (in dB).
+		@param threshold        The value of the patient's thresholds (in dB).
+		@param numPresentations The total number of presentations of all stimuli so far.
+		@param stdev            The standard deviation of the distribution.
+	*/
+        static class Seen_Rus extends Seen
+	{
+            // indexed by 0,1,...,40 dB
+	    double stDevs[] = { 0.339405253, 1.658132034, 2.694512995, 3.631417067, 4.298012016, 4.832162296,
+                            5.231631542, 5.503306132, 5.761346639, 5.970332073, 6.075312276, 5.995712683,
+                            6.067060415, 6.05959009, 5.90644053, 5.732019091, 5.429520493, 5.074065784,
+                            4.689000989, 4.332392529, 3.888510168, 3.412838557, 2.988729801, 2.598228922,
+                            2.237560667, 1.965518368, 1.748990644, 1.559720163, 1.423316166, 1.317721957,
+                            1.216192107, 1.116243672, 1.038129913, 1.039963873, 1.107563206, 1.381632837,
+                            2.069762167, 2.879488142, 4.259872165, 4.731919864, 4.793199966 };
+
+	    Seen_Rus(double fpr, double fnr) { super(fpr, fnr); }
+
+	    public boolean seen(int stimVal, double threshold, int numPresentations, int x, int y)
+	    {
+		int falseResponse = checkFalseResponse();
+		if (falseResponse == +1) return true;
+		if (falseResponse == -1) return false;
+		
+        int t = (int)Math.round(threshold);
+        if (t < 0)
+		    return GaussianSeen(stimVal, threshold, numPresentations, stDevs[0]);
+        if (t > 40)
+		    return GaussianSeen(stimVal, threshold, numPresentations, stDevs[40]);
+
+		return GaussianSeen(stimVal, threshold, numPresentations, stDevs[t]);
+	    }
+	}//Seen_Rus class
 }

@@ -1,3 +1,5 @@
+
+
 package Barramundi;
 
 import java.lang.Math;
@@ -5,10 +7,6 @@ import java.util.Random;
 public class SeenFactory
 {
     private static Random rand = new Random();
-
-
-
-
     public static Seen_100 getSeen_100(Double falsePositiveRate, Double falseNegativeRate) { return new Seen_100(falsePositiveRate.doubleValue(), falseNegativeRate.doubleValue());}
     public static Seen_90u getSeen_90u(Double falsePositiveRate, Double falseNegativeRate) { return new Seen_90u(falsePositiveRate.doubleValue(), falseNegativeRate.doubleValue());}
     public static Seen_G_H getSeen_G_HNSize3(Double falsePositiveRate, Double falseNegativeRate) { return new Seen_G_H(falsePositiveRate.doubleValue(), falseNegativeRate.doubleValue(), -0.066, 2.81);}
@@ -19,7 +17,6 @@ public class SeenFactory
     public static Seen_E1 getSeen_E1(Double falsePositiveRate, Double falseNegativeRate) { return new Seen_E1(falsePositiveRate.doubleValue(), falseNegativeRate.doubleValue());}
     public static Seen_E2 getSeen_E2(Double falsePositiveRate, Double falseNegativeRate) { return new Seen_E2(falsePositiveRate.doubleValue(), falseNegativeRate.doubleValue());}
     public static Seen_E12 getSeen_E12(Double falsePositiveRate, Double falseNegativeRate) { return new Seen_E12(falsePositiveRate.doubleValue(), falseNegativeRate.doubleValue());}
-
 public static Seen_G_x getSeen_G_0p0(Double falsePositiveRate, Double falseNegativeRate) { return new Seen_G_x(falsePositiveRate.doubleValue(), falseNegativeRate.doubleValue(), 0.0);}
 public static Seen_G_x getSeen_G_0p1(Double falsePositiveRate, Double falseNegativeRate) { return new Seen_G_x(falsePositiveRate.doubleValue(), falseNegativeRate.doubleValue(), 0.1);}
 public static Seen_G_x getSeen_G_0p2(Double falsePositiveRate, Double falseNegativeRate) { return new Seen_G_x(falsePositiveRate.doubleValue(), falseNegativeRate.doubleValue(), 0.2);}
@@ -120,129 +117,130 @@ public static Seen_G_x getSeen_G_9p6(Double falsePositiveRate, Double falseNegat
 public static Seen_G_x getSeen_G_9p7(Double falsePositiveRate, Double falseNegativeRate) { return new Seen_G_x(falsePositiveRate.doubleValue(), falseNegativeRate.doubleValue(), 9.7);}
 public static Seen_G_x getSeen_G_9p8(Double falsePositiveRate, Double falseNegativeRate) { return new Seen_G_x(falsePositiveRate.doubleValue(), falseNegativeRate.doubleValue(), 9.8);}
 public static Seen_G_x getSeen_G_9p9(Double falsePositiveRate, Double falseNegativeRate) { return new Seen_G_x(falsePositiveRate.doubleValue(), falseNegativeRate.doubleValue(), 9.9);}
-        static class Seen_100 extends Seen {
-                Seen_100(double fpr, double fnr) {super(fpr, fnr); }
-
-                public boolean seen(int stimVal, double threshold, int numPresentations, int x, int y) {
+public static Seen_Rus getSeen_Rus(Double falsePositiveRate, Double falseNegativeRate) { return new Seen_Rus(falsePositiveRate.doubleValue(), falseNegativeRate.doubleValue());}
+ static class Seen_100 extends Seen {
+  Seen_100(double fpr, double fnr) {super(fpr, fnr); }
+  public boolean seen(int stimVal, double threshold, int numPresentations, int x, int y) {
             int falseResponse = checkFalseResponse();
-                        if (falseResponse == +1) return true;
-                        if (falseResponse == -1) return false;
-                        return (stimVal < threshold);
-                }
-        }
-
-
-
-
-
-
-
-        static class Seen_90u extends Seen {
-                Seen_90u(double fpr, double fnr) {super(fpr, fnr); }
-                public boolean seen(int stimVal, double threshold, int numPresentations, int x, int y) {
+   if (falseResponse == +1) return true;
+   if (falseResponse == -1) return false;
+   return (stimVal < threshold);
+  }
+ }
+ static class Seen_90u extends Seen {
+  Seen_90u(double fpr, double fnr) {super(fpr, fnr); }
+  public boolean seen(int stimVal, double threshold, int numPresentations, int x, int y) {
             int falseResponse = checkFalseResponse();
-                        if (falseResponse == +1) return true;
-                        if (falseResponse == -1) return false;
-                        return ((rand.nextDouble() < 0.9) && (stimVal < threshold));
-                }
-        }
+   if (falseResponse == +1) return true;
+   if (falseResponse == -1) return false;
+   return ((rand.nextDouble() < 0.9) && (stimVal < threshold));
+  }
+ }
         static class Seen_G_x extends Seen
-        {
-            double m_stDev;
-
-            Seen_G_x(double fpr, double fnr, double stdev)
-            {
-                super(fpr, fnr);
-                m_stDev = stdev;
-            }
-
-            public boolean seen(int stimVal, double threshold, int numPresentations, int x, int y)
-            {
-                int falseResponse = checkFalseResponse();
-                if (falseResponse == +1) return true;
-                if (falseResponse == -1) return false;
-
-                return GaussianSeen(stimVal, threshold, numPresentations, m_stDev);
-            }
-        }
+ {
+     double m_stDev;
+     Seen_G_x(double fpr, double fnr, double stdev)
+     {
+  super(fpr, fnr);
+  m_stDev = stdev;
+     }
+     public boolean seen(int stimVal, double threshold, int numPresentations, int x, int y)
+     {
+  int falseResponse = checkFalseResponse();
+  if (falseResponse == +1) return true;
+  if (falseResponse == -1) return false;
+  return GaussianSeen(stimVal, threshold, numPresentations, m_stDev);
+     }
+ }
         static class Seen_G_H extends Seen
-        {
-            double m_a;
-            double m_b;
-
-            Seen_G_H(double fpr, double fnr, double a, double b)
-            {
-                super(fpr, fnr);
-                m_a = a;
-                m_b = b;
-            }
-
-            public boolean seen(int stimVal, double threshold, int numPresentations, int x, int y)
-            {
-                int falseResponse = checkFalseResponse();
-                if (falseResponse == +1) return true;
-                if (falseResponse == -1) return false;
-                double hensonStdDev = Math.min(Math.exp(m_a*threshold + m_b), 5.0);
-                return GaussianSeen(stimVal, threshold, numPresentations, hensonStdDev);
-            }
-        }
-        static boolean GaussianSeen(int stimVal, double threshold, int numPresentations, double stdDev) {
-                int thisThreshold = (int)Math.round(threshold + stdDev * rand.nextGaussian());
-
-                if (stimVal == thisThreshold)
-                        return (rand.nextDouble() < 0.5);
-                else
-                        return (stimVal < thisThreshold);
-        }
-
-
-        static class Seen_E1 extends Seen {
-                Seen_E1(double fpr, double fnr) {super(fpr, fnr); }
-                public boolean seen(int stimVal, double threshold, int numPresentations, int x, int y) {
-                        boolean s;
-                        if (stimVal == threshold)
-                                s = rand.nextDouble() < 0.5;
-                        else
-                                s = stimVal < threshold;
-
-                        if (numPresentations == 1)
-                                return !s;
-                        else
-                                return s;
-                }
-        }
-
-
-        static class Seen_E12 extends Seen {
-                Seen_E12(double fpr, double fnr) {super(fpr, fnr); }
-                public boolean seen(int stimVal, double threshold, int numPresentations, int x, int y) {
-                        boolean s;
-                        if (stimVal == threshold)
-                                s = rand.nextDouble() < 0.5;
-                        else
-                                s = stimVal < threshold;
-
-                        if (numPresentations <= 2)
-                                return !s;
-                        else
-                                return s;
-                }
-        }
-
-
-        static class Seen_E2 extends Seen {
-                Seen_E2(double fpr, double fnr) {super(fpr, fnr); }
-                public boolean seen(int stimVal, double threshold, int numPresentations, int x, int y) {
-                        boolean s;
-                        if (stimVal == threshold)
-                                s = rand.nextDouble() < 0.5;
-                        else
-                                s = stimVal < threshold;
-
-                        if (numPresentations == 2)
-                                return !s;
-                        else
-                                return s;
-                }
-        }
+ {
+     double m_a;
+     double m_b;
+     Seen_G_H(double fpr, double fnr, double a, double b)
+     {
+  super(fpr, fnr);
+  m_a = a;
+  m_b = b;
+     }
+     public boolean seen(int stimVal, double threshold, int numPresentations, int x, int y)
+     {
+  int falseResponse = checkFalseResponse();
+  if (falseResponse == +1) return true;
+  if (falseResponse == -1) return false;
+  double hensonStdDev = Math.min(Math.exp(m_a*threshold + m_b), 5.0);
+  return GaussianSeen(stimVal, threshold, numPresentations, hensonStdDev);
+     }
+ }
+ static boolean GaussianSeen(int stimVal, double threshold, int numPresentations, double stdDev) {
+  int thisThreshold = (int)Math.round(threshold + stdDev * rand.nextGaussian());
+  if (stimVal == thisThreshold)
+   return (rand.nextDouble() < 0.5);
+  else
+   return (stimVal < thisThreshold);
+ }
+ static class Seen_E1 extends Seen {
+  Seen_E1(double fpr, double fnr) {super(fpr, fnr); }
+  public boolean seen(int stimVal, double threshold, int numPresentations, int x, int y) {
+   boolean s;
+   if (stimVal == threshold)
+    s = rand.nextDouble() < 0.5;
+   else
+    s = stimVal < threshold;
+   if (numPresentations == 1)
+    return !s;
+   else
+    return s;
+  }
+ }
+ static class Seen_E12 extends Seen {
+  Seen_E12(double fpr, double fnr) {super(fpr, fnr); }
+  public boolean seen(int stimVal, double threshold, int numPresentations, int x, int y) {
+   boolean s;
+   if (stimVal == threshold)
+    s = rand.nextDouble() < 0.5;
+   else
+    s = stimVal < threshold;
+   if (numPresentations <= 2)
+    return !s;
+   else
+    return s;
+  }
+ }
+ static class Seen_E2 extends Seen {
+  Seen_E2(double fpr, double fnr) {super(fpr, fnr); }
+  public boolean seen(int stimVal, double threshold, int numPresentations, int x, int y) {
+   boolean s;
+   if (stimVal == threshold)
+    s = rand.nextDouble() < 0.5;
+   else
+    s = stimVal < threshold;
+   if (numPresentations == 2)
+    return !s;
+   else
+    return s;
+  }
+ }
+        static class Seen_Rus extends Seen
+ {
+     double stDevs[] = { 0.339405253, 1.658132034, 2.694512995, 3.631417067, 4.298012016, 4.832162296,
+                            5.231631542, 5.503306132, 5.761346639, 5.970332073, 6.075312276, 5.995712683,
+                            6.067060415, 6.05959009, 5.90644053, 5.732019091, 5.429520493, 5.074065784,
+                            4.689000989, 4.332392529, 3.888510168, 3.412838557, 2.988729801, 2.598228922,
+                            2.237560667, 1.965518368, 1.748990644, 1.559720163, 1.423316166, 1.317721957,
+                            1.216192107, 1.116243672, 1.038129913, 1.039963873, 1.107563206, 1.381632837,
+                            2.069762167, 2.879488142, 4.259872165, 4.731919864, 4.793199966 };
+     Seen_Rus(double fpr, double fnr) { super(fpr, fnr); }
+     public boolean seen(int stimVal, double threshold, int numPresentations, int x, int y)
+     {
+  int falseResponse = checkFalseResponse();
+  if (falseResponse == +1) return true;
+  if (falseResponse == -1) return false;
+        int t = (int)Math.round(threshold);
+        if (t < 0)
+      return GaussianSeen(stimVal, threshold, numPresentations, stDevs[0]);
+        if (t > 40)
+      return GaussianSeen(stimVal, threshold, numPresentations, stDevs[40]);
+  return GaussianSeen(stimVal, threshold, numPresentations, stDevs[t]);
+     }
+ }
 }
