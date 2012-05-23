@@ -109,7 +109,7 @@ public class Database {
 		try { 
 			Class c = Class.forName(recordType); 
 			Constructor cons[] = c.getDeclaredConstructors();
-			DatabaseRecord newRecord = (DatabaseRecord)cons[0].newInstance(null);
+			DatabaseRecord newRecord = (DatabaseRecord)cons[0].newInstance((Object[])null);
 			if (newRecord.edit(frame)) {
 				list.addElement(newRecord);
 				changed = true;
