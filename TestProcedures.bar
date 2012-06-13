@@ -1,3 +1,5 @@
+SEMU_KS_2SP s=1.5 pdf=uniform SP=20 AP=32~Barramundi.TPSEMU_KS_2SP~20~SP~32~AP~PDFUniform.txt~pdf~LF95_3.txt~lf~NUMBER_OF_PRESENTATIONS~stop condition~10~stop param
+-----------
 FullT 24-2~Barramundi.TPFullThreshold242~-1~start guess
 -----------
 EMU s=1.5 pdf=uniform lf=LF95_3~Barramundi.TPEMU~PDFUniform.txt~pdf~LF95_3.txt~lf~STANDARD_DEVIATION~stop condition~1.5~stop param

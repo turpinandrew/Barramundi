@@ -1,6 +1,6 @@
 .SUFFIXES:	.java .class
 
-DEFS =     # -DVERBOSE_OUTPUT # -DCOMMAPI_PRESENT 
+DEFS =      #-DVERBOSE_OUTPUT # -DCOMMAPI_PRESENT 
 
 MANIFEST = META-INF/MANIFEST.MF
 
@@ -10,7 +10,8 @@ GUI_CLASSES = Simulator.class Control.class
 
 CLI_CLASSES = CLISimulator.class CLIControl.class
 
-COMMON_CLASSES = AbstractPatientModifier.class AbstractTestProcedure.class BarGraphDrawer.class BarGraphPanel.class Database.class DatabaseException.class DatabaseRecord.class GaussianNoise.class Interface.class LineGraphDrawer.class LineGraphPanel.class NoNoise.class Pair.class Patient.class PatientData.class PatientDataRecord.class PatientResult.class PatientModifierException.class PatientResults.class PatientSetRecord.class PatientSets.class QuickSort.class Seen.class SortableObject.class StaticModifier.class Stimuli.class StimulusRecord.class TestProcedureException.class TestProcedureRecord.class TestProcedures.class TPGeneralStaircase.class SeenFactory.class HFA.class TestHFA.class TPZest.class TPSEMU.class TPSEMU_KS.class TPEMU.class TPFullThreshold242.class
+COMMON_CLASSES = AbstractPatientModifier.class AbstractTestProcedure.class BarGraphDrawer.class BarGraphPanel.class Database.class DatabaseException.class DatabaseRecord.class GaussianNoise.class Interface.class LineGraphDrawer.class LineGraphPanel.class NoNoise.class Pair.class Patient.class PatientData.class PatientDataRecord.class PatientResult.class PatientModifierException.class PatientResults.class PatientSetRecord.class PatientSets.class QuickSort.class Seen.class SortableObject.class StaticModifier.class Stimuli.class StimulusRecord.class TestProcedureException.class TestProcedureRecord.class TestProcedures.class TPGeneralStaircase.class SeenFactory.class HFA.class TestHFA.class TPZest.class TPSEMU.class TPSEMU_KS.class TPEMU.class TPFullThreshold242.class TPSEMU_KS_2SP.class
+
 
 #%.java: %.jc
 #	gcc -E -P $< > $*.java

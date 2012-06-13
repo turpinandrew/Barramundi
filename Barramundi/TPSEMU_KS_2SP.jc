@@ -121,6 +121,13 @@ public class TPSEMU_KS_2SP extends AbstractTestProcedure {
             }
     }// localSetup()
     
+    private void printPdf(double []pdf, String msg) {
+        System.out.print(msg);
+        for(int j = 0 ; j < pdf.length; j++)
+            System.out.print(pdf[j]+" ");
+        System.out.println("");
+    }// printPdf()
+
     /** 
         For each location
             Present SP (possibly multiple times)
@@ -141,6 +148,9 @@ public class TPSEMU_KS_2SP extends AbstractTestProcedure {
             Point point = (Point) points.get(i);
             int loc = (int)point.getNumber();
 
+#ifdef VERBOSE_OUTPUT
+            printPdf(combinedPdf, "Initial Pdf = ");
+#endif
             stats.numPresentation[loc] = 0;
 
             int numSeen = 0;
@@ -154,9 +164,6 @@ System.out.print("Present SP= "+sp);
                 if (seen) {
 #ifdef VERBOSE_OUTPUT
     System.out.println("Seen");
-    System.out.println("--------------------");
-    System.out.println(combinedPdf);
-    System.out.println("--------------------");
 #endif
                     numSeen++;
                     scalePdf(combinedPdf, alignLf(lf, sp, ALIGN_YES));
@@ -166,6 +173,9 @@ System.out.print("Present SP= "+sp);
 #endif
                     scalePdf(combinedPdf, alignLf(lf, sp, ALIGN_NO));
                 }
+#ifdef VERBOSE_OUTPUT
+            printPdf(combinedPdf, "Pdf after SP = ");
+#endif
             }// end for loop to do SP twice
 
             if (numSeen > 0) {   // passed SP, now do AP
@@ -182,11 +192,12 @@ System.out.print("Present AP= "+ap);
                     numSeen = 0;    // trigger zest
                 }
 #ifdef VERBOSE_OUTPUT
-System.out.print("Present AP= "+ap);
-if (seen) 
-    System.out.println("Seen");
-else 
-    System.out.println("Not Seen");
+                System.out.print("Present AP= "+ap);
+                if (seen) 
+                    System.out.println("Seen");
+                else 
+                    System.out.println("Not Seen");
+                printPdf(combinedPdf, "Pdf after AP = ");
 #endif
             } 
 
@@ -220,6 +231,9 @@ else
                         System.out.println("Not Seen");
 #endif              
                     }
+#ifdef VERBOSE_OUTPUT
+                    printPdf(combinedPdf, "Pdf ZEST = ");
+#endif              
 
                     if (((stoppingCondition == NUMBER_OF_PRESENTATIONS) && (stats.numPresentation[loc] >= stoppingParam))
                     ||  ((stoppingCondition == ENTROPY)                && (entropy(combinedPdf) <= stoppingParam))

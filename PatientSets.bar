@@ -1,3 +1,8 @@
+Russel fp=0   fn=0   ~0~0~normalAA45-24-2.pat~Seen_Rus~0.0~0.0
+Russel p=3    fn=15  ~0~0~normalAA45-24-2.pat~Seen_Rus~0.03~0.15
+Russel fp=15  fn=3   ~0~0~normalAA45-24-2.pat~Seen_Rus~0.15~0.03
+Russel fp=20  fn=20  ~0~0~normalAA45-24-2.pat~Seen_Rus~0.2~0.2
+---
 Example G_1 fp=0    fn=0   ~0~0~normalAA45-24-2.pat~Seen_G_1p0~0.0~0.0
 Example G_3 fp=0.05 fn=0.15~0~0~normalAA45-24-2.pat~Seen_G_3p0~0.5~0.15
 Example G_5 fp=0.30 fn=0.30~0~0~normalAA45-24-2.pat~Seen_G_5p0~0.30~0.30
